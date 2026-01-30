@@ -3,11 +3,11 @@ core-version: >5.1.23
 created: 20241208234130793
 description: A small plugin for Chrome Extension PubConnector
 list: readme license settings
-modified: 20260107074807817
+modified: 20260129235415046
 name: tw-literature
 plugin-draft: plugin
 source: https://tw-literature.bangyou.me
 tags: 
 title: $:/plugins/bangyou/tw-literature
 type: application/json
-version: 0.3.70
+version: 0.3.71

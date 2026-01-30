@@ -61,7 +61,19 @@ module-type: route
 	exports.handler = function (request, response, state) {
 
 		try {
-			const bibtex = state.data;
+			
+			// Parse state.data if it's a JSON string
+			let data = state.data;
+			if (typeof state.data === 'string') {
+				try {
+					data = JSON.parse(state.data);
+				} catch (e) {
+					// If parsing fails, assume state.data is already the bibtex string
+					data = state.data;
+				}
+			}
+			// Extract bibtex from data.bibtex if it exists, otherwise use data directly
+			const bibtex = data.bibtex !== undefined ? data.bibtex : data;
 			if (!bibtex || typeof bibtex !== 'string' || bibtex.trim() === "") {
 				response.writeHead(400, { "Content-Type": "application/json" });
 				response.end(JSON.stringify({

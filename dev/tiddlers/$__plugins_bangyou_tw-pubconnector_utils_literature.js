@@ -1,0 +1,676 @@
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/utils/literature.js
+type: application/javascript
+module-type: library
+Utils functions
+
+\*/
+
+
+'use strict';
+
+
+function Literature() {
+
+    function createReadButton(cleanDoi, currentRefItem, countElement) {
+        const readButton = document.createElement('button');
+        readButton.className = 'tw-pubconnector-read-button';
+        readButton.innerHTML = '✕';
+        readButton.title = 'Mark as read';
+        readButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (readButton.classList.contains('reading')) return;
+            
+            readButton.classList.add('reading');
+            readButton.innerHTML = '⌛';
+            readButton.title = 'Marking as read...';
+            
+            try {
+                const response = await fetch('/literature/mark-read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ doi: cleanDoi })
+                });
+                
+                if (response.ok) {
+                    // Hide the refItem with smooth transition
+                    currentRefItem.style.transition = 'all 0.5s ease';
+                    currentRefItem.style.opacity = '0';
+                    currentRefItem.style.transform = 'scale(0.95)';
+                    
+                    // Completely hide the element after transition
+                    setTimeout(() => {
+                        currentRefItem.style.display = 'none';
+                    }, 500);
+                    
+                    // Update count if provided
+                    if (countElement) {
+                        const currentCount = parseInt(countElement.textContent.match(/\d+/)[0]);
+                        countElement.innerHTML = `Total: <span style="font-size: 20px; font-weight: bold; color: #212529;">${currentCount - 1}</span> items`;
+                    }
+                    
+                    // Update button to show success
+                    readButton.innerHTML = '✓';
+                    readButton.title = 'Marked as read';
+                    readButton.style.background = '#d1fae5';
+                    readButton.style.color = '#059669';
+                    readButton.style.borderColor = '#10b981';
+                } else {
+                    throw new Error('Failed to mark as read');
+                }
+            } catch (error) {
+                console.error('Error marking item as read:', error);
+                readButton.classList.remove('reading');
+                readButton.innerHTML = '✕';
+                readButton.title = 'Mark as read (click to retry)';
+                
+                // Show error state briefly
+                readButton.style.background = '#fee2e2';
+                readButton.style.color = '#dc2626';
+                setTimeout(() => {
+                    readButton.style.background = '';
+                    readButton.style.color = '';
+                }, 2000);
+            }
+        });
+        return readButton;
+    }
+
+    function card(items) {
+        let result = document.createElement('div');
+        result.className = "tw-pubconnector-list";
+        if (!Array.isArray(items) || items.length === 0) {
+            result.innerHTML = "No references found.";
+            return result;
+        }
+
+        for (const item of items) {
+            const refItem = document.createElement('div');
+            refItem.className = "tw-pubconnector-item";
+
+            // Create a title item with a link to the DOI
+            const titleItem = document.createElement('div');
+            titleItem.className = "tw-pubconnector-title";
+
+            const titleItemSpan = document.createElement('span');
+            titleItemSpan.className = "tw-pubconnector-title-text";
+            //titleItemSpan.innerHTML = result.title || "No title available";
+            if (item.doi) {
+                const doiLink = document.createElement('a');
+                doiLink.href = item.doi.startsWith('https://doi.org/') ? item.doi : `https://doi.org/${item.doi}`;
+                doiLink.target = "_blank";
+                doiLink.rel = "noopener noreferrer";
+                doiLink.className = "tw-pubconnector-doi-link";
+                doiLink.innerHTML = item.title || "No title available";
+                titleItemSpan.appendChild(doiLink);
+            }
+            titleItem.appendChild(titleItemSpan);
+            refItem.appendChild(titleItem);
+
+            // Create a div for the authors
+            const authorsDiv = document.createElement('div');
+            authorsDiv.className = "literature-authors";
+
+            let authorsEle = []
+            if (Array.isArray(item.authorships) && item.authorships.length > 0) {
+                const maxAuthors = 5;
+                const authorsToShow = item.authorships.slice(0, maxAuthors);
+                
+                for (const author of authorsToShow) {
+                    const authorSpan = document.createElement('span');
+                    authorSpan.className = "tw-pubconnector-author";
+                    authorSpan.textContent = author.author.display_name || "Unknown Author";
+                    authorsEle.push(authorSpan);
+                }
+                
+                authorsEle.forEach((el, idx) => {
+                    authorsDiv.appendChild(el);
+                    if (idx < authorsEle.length - 1) {
+                        authorsDiv.appendChild(document.createTextNode(', '));
+                    }
+                });
+                
+                // Add "and X more" if there are more than maxAuthors
+                if (item.authorships.length > maxAuthors) {
+                    const moreSpan = document.createElement('span');
+                    moreSpan.className = "tw-pubconnector-author-more";
+                    moreSpan.textContent = ` and ${item.authorships.length - maxAuthors} more`;
+                    moreSpan.style.fontStyle = 'italic';
+                    moreSpan.style.color = '#64748b';
+                    authorsDiv.appendChild(moreSpan);
+                }
+
+            } else {
+                authorsDiv.textContent = "No authors available";
+            }
+
+
+            refItem.appendChild(authorsDiv);
+            result.appendChild(refItem);
+        }
+        return result;
+    }
+
+    const crossrefCache = new Map();
+
+    // Helper function to get and scale SVG icon from tiddler
+    function getSvgIcon(tiddlerPath, fallbackEmoji = '', size = '1.4em') {
+        if (typeof $tw !== 'undefined' && $tw.wiki) {
+            const svgContent = $tw.wiki.getTiddlerText(tiddlerPath);
+            if (svgContent) {
+                // Remove fixed width/height and add CSS to scale with font size
+                return svgContent
+                    .replace(/width="[^"]*"/, `width="${size}"`)
+                    .replace(/height="[^"]*"/, `height="${size}"`)
+                    .replace(/<svg/, '<svg style="vertical-align: middle; display: inline-block;"');
+            }
+        }
+        return fallbackEmoji;
+    }
+
+    function cardFromDOIs(items, current_tiddler) {
+        let result = document.createElement('div');
+        result.className = "tw-pubconnector-list";
+        
+        // Create TiddlyWiki story instance once for reuse
+        const story = (typeof $tw !== 'undefined' && $tw.wiki) ? new $tw.Story({ wiki: $tw.wiki }) : null;
+        var openLinkFromInsideRiver = $tw.wiki.getTiddler("$:/config/Navigation/openLinkFromInsideRiver").fields.text;
+        var openLinkFromOutsideRiver = $tw.wiki.getTiddler("$:/config/Navigation/openLinkFromOutsideRiver").fields.text;
+        
+        // Create count header
+        const countHeader = document.createElement('div');
+        countHeader.className = 'tw-pubconnector-count-header';
+        countHeader.style.padding = '8px 12px';
+        countHeader.style.background = '#f8f9fa';
+        countHeader.style.color = '#495057';
+        countHeader.style.fontWeight = '600';
+        countHeader.style.fontSize = '14px';
+        countHeader.style.borderRadius = '4px';
+        countHeader.style.marginBottom = '12px';
+        countHeader.style.border = '1px solid #dee2e6';
+        
+        if (!Array.isArray(items) || items.length === 0) {
+            countHeader.innerHTML = `Total: <span style="font-size: 20px; font-weight: bold; color: #212529;">0</span> items`;
+            result.appendChild(countHeader);
+            const emptyState = document.createElement('div');
+            emptyState.className = 'tw-pubconnector-empty-state';
+            emptyState.innerHTML = `
+                <div class="tw-pubconnector-empty-icon">📚</div>
+                <h3 class="tw-pubconnector-empty-title">No references found</h3>
+            `;
+            result.appendChild(emptyState);
+            return result;
+        }
+        
+        // Set initial count
+        countHeader.innerHTML = `Total: <span style="font-size: 20px; font-weight: bold; color: #212529;">${items.length}</span> items`;
+        result.appendChild(countHeader);
+
+        // Process items in batches for progressive rendering
+        const BATCH_SIZE = 2;
+        let currentIndex = 0;
+        
+        function processBatch() {
+            const batchEnd = Math.min(currentIndex + BATCH_SIZE, items.length);
+            
+            for (let i = currentIndex; i < batchEnd; i++) {
+                const item = items[i];
+                
+                // Handle items without DOI with error card
+                if (!item.doi) {
+                    console.warn('Skipping item without DOI:', item);
+                    
+                    const refItem = document.createElement('div');
+                    refItem.className = "tw-pubconnector-item tw-pubconnector-error";
+                    
+                    const errorContent = document.createElement('div');
+                    errorContent.className = 'tw-pubconnector-fallback';
+                    errorContent.innerHTML = `
+                        <div class="tw-pubconnector-fallback-icon">⚠️</div>
+                        <h3 class="tw-pubconnector-fallback-title">${item.title || 'No title available'}</h3>
+                        <p class="tw-pubconnector-fallback-subtitle">Missing DOI - Cannot load details</p>
+                    `;
+                    
+                    // Add platform information to error case
+                    const errorFooter = document.createElement('div');
+                    errorFooter.className = 'tw-pubconnector-footer';
+                    
+                    const errorLeftInfo = document.createElement('div');
+                    errorLeftInfo.className = 'tw-pubconnector-footer-left';
+                    errorFooter.appendChild(errorLeftInfo);
+                    
+                    const errorRightInfo = document.createElement('div');
+                    errorRightInfo.className = 'tw-pubconnector-footer-right';
+                    
+                    // Convert platform to array if needed and create badges
+                    const platforms = Array.isArray(item.platform) ? item.platform : [item.platform || 'Unknown'];
+                    platforms.forEach(platform => {
+                        const sourceSpan = document.createElement('span');
+                        sourceSpan.className = 'tw-pubconnector-source-badge';
+                        sourceSpan.textContent = `🔗 ${platform}`;
+                        errorRightInfo.appendChild(sourceSpan);
+                    });
+                    
+                    errorFooter.appendChild(errorRightInfo);
+                    errorContent.appendChild(errorFooter);
+                    
+                    refItem.appendChild(errorContent);
+                    result.appendChild(refItem);
+                    continue;
+                }
+                
+                const refItem = document.createElement('div');
+                refItem.className = "tw-pubconnector-item";
+
+                // Create a title item with a link to the DOI
+                const titleItem = document.createElement('div');
+                titleItem.className = "tw-pubconnector-title";
+
+                const titleItemSpan = document.createElement('span');
+                titleItemSpan.className = "tw-pubconnector-title-text";
+
+                const doiLink = document.createElement('a');
+                doiLink.href = item.doi.startsWith('https://doi.org/') ? item.doi : `https://doi.org/${item.doi}`;
+                doiLink.target = "_blank";
+                doiLink.rel = "noopener noreferrer";
+                doiLink.className = "tw-pubconnector-doi-link";
+                doiLink.innerHTML = "Loading...";
+                titleItemSpan.appendChild(doiLink);
+                titleItem.appendChild(titleItemSpan);
+                refItem.appendChild(titleItem);
+
+                // Create a div for the authors
+                const authorsDiv = document.createElement('div');
+                authorsDiv.className = "literature-authors";
+                refItem.appendChild(authorsDiv);
+                
+                // Add to result immediately after creating the complete structure
+                result.appendChild(refItem);
+                
+                // Fetch and render item data
+                renderItem(item, refItem, doiLink, titleItem, authorsDiv, story, current_tiddler, openLinkFromInsideRiver, openLinkFromOutsideRiver, countHeader);
+            }
+            
+            currentIndex = batchEnd;
+            
+            // Schedule next batch if there are more items
+            if (currentIndex < items.length) {
+                setTimeout(processBatch, 0);
+            }
+        }
+        
+        // Start processing first batch
+        processBatch();
+        
+        return result;
+    }
+    
+    // Separate function to render individual item (called synchronously, fetches async)
+    function renderItem(currentItem, currentRefItem, currentDoiLink, currentTitleItem, currentAuthorsDiv, story, current_tiddler, openLinkFromInsideRiver, openLinkFromOutsideRiver, countElement) {
+        // Fetch data from crossref API (this is async and won't block)
+        (async () => {
+                try {
+                    const cleanDoi = currentItem.doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
+
+                    let crossrefData;
+                    const needsAuthorData = !currentItem.author || currentItem.author.length === 0;
+                    // Convert platform to array if needed and create badges
+                    const platforms = Array.isArray(currentItem.platform) ? currentItem.platform : [currentItem.platform];
+                    const isPlatformData = platforms.some(platform => 
+                        platform === "Web of Science" || 
+                        platform === "Scopus" ||
+                        platform === "OpenAlex" ||
+                        platform === "Google Scholar"
+                    );
+                    
+                    // Check if data is already cached
+                    if (crossrefCache.has(cleanDoi)) {
+                        crossrefData = crossrefCache.get(cleanDoi);
+                    } else if (isPlatformData && !needsAuthorData) {
+                        // Use platform data directly only if it has author information
+                        crossrefData = currentItem;
+                    } else {
+                        // Fetch from crossref if not cached or if we need author data
+                        const response = await fetch(`literature/crossref/${encodeURIComponent(cleanDoi)}`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const fetchedData = await response.json();
+                        if (!fetchedData || !fetchedData.data || !fetchedData.data.message) {
+                            throw new Error('Invalid crossref response structure');
+                        }
+                        const crossrefMessage = fetchedData.data.message;
+                        
+                        // Merge crossref author data with platform data if needed
+                        if (isPlatformData && needsAuthorData && crossrefMessage.author) {
+                            crossrefData = { ...currentItem, author: crossrefMessage.author };
+                        } else {
+                            crossrefData = crossrefMessage;
+                        }
+                        
+                        // Cache the successful response
+                        crossrefCache.set(cleanDoi, crossrefData);
+                    }
+
+                    
+                    const data = crossrefData;
+                    
+                    // Clear the existing simple structure and rebuild with rich content
+                    currentRefItem.innerHTML = '';
+                    
+                    // Create read button
+                    const readButton = createReadButton(cleanDoi, currentRefItem, countElement);
+                    currentRefItem.appendChild(readButton);
+                    
+                    // Create main content container
+                    const contentContainer = document.createElement('div');
+                    contentContainer.className = 'tw-pubconnector-content';
+                    
+                    // Title section
+                    const titleSection = document.createElement('div');
+                    titleSection.className = 'tw-pubconnector-title-section';
+                    
+                    const titleElement = document.createElement('h3');
+                    titleElement.className = 'tw-pubconnector-title';
+                    
+                    const titleLink = document.createElement('a');
+                    titleLink.href = currentItem.doi.startsWith('https://') ? currentItem.doi : `https://doi.org/${currentItem.doi}`;
+                    titleLink.target = '_blank';
+                    titleLink.rel = 'noopener noreferrer';
+                    titleLink.className = 'tw-pubconnector-title-link';
+                    titleLink.innerHTML = data.title || data.title?.[0] || currentItem.title || 'No title available';
+                    
+                    titleElement.appendChild(titleLink);
+                    titleSection.appendChild(titleElement);
+                    
+                    // DOI badge
+                    const doiBadge = document.createElement('span');
+                    doiBadge.className = 'tw-pubconnector-doi-badge';
+                    doiBadge.textContent = `DOI: ${cleanDoi}`;
+                    titleSection.appendChild(doiBadge);
+                    
+                    contentContainer.appendChild(titleSection);
+                    
+                    // Authors section
+                    const authorsSection = document.createElement('div');
+                    authorsSection.className = 'tw-pubconnector-authors-section';
+                    
+                    if (data.author && data.author.length > 0) {
+                        const authorsContainer = document.createElement('div');
+                        authorsContainer.className = 'tw-pubconnector-authors-container';
+                        
+                        const authorsLabel = document.createElement('span');
+                        authorsLabel.className = 'tw-pubconnector-authors-label';
+                        authorsLabel.textContent = 'Authors:';
+                        authorsContainer.appendChild(authorsLabel);
+                        
+                        const maxAuthors = 20;
+                        const authorsToShow = data.author.slice(0, maxAuthors);
+                        
+                        authorsToShow.forEach((author, index) => {
+                            const authorSpan = document.createElement('span');
+                            authorSpan.className = 'tw-pubconnector-author-chip';
+                            const authorName = `${author.given || ''} ${author.family || ''}`.trim();
+                            
+                            // Find colleague tiddler by searching researcherId, authorId, or ORCID
+                            if (!author.colleague && typeof $tw !== 'undefined' && $tw.wiki) {
+                                // Build a single filter with all available identifiers
+                                const filterParts = [];
+                                
+                                if (author.researcherId) {
+                                    filterParts.push(`[tag[Colleague]search:researcherid:regexp[${author.researcherId}]]`);
+                                }
+                                
+                                if (author.authorId) {
+                                    filterParts.push(`[tag[Colleague]search:scopus:regexp[${author.authorId}]]`);
+                                }
+                                
+                                if (author.ORCID) {
+                                    const orcidClean = author.ORCID.replace('https://orcid.org/', '');
+                                    filterParts.push(`[tag[Colleague]search:orcid:regexp[${orcidClean}]]`);
+                                }
+                                
+                                if (author.openalexId) {
+                                    filterParts.push(`[tag[Colleague]search:openalex:regexp[${author.openalexId}]]`);
+                                }
+
+                                // Run single filter with all conditions (OR logic)
+                                if (filterParts.length > 0) {
+                                    const filter = filterParts.join(' ');
+                                    const colleagueTiddlers = $tw.wiki.filterTiddlers(filter);
+                                    
+                                    // Set colleague if exactly one match found
+                                    if (colleagueTiddlers.length === 1) {
+                                        author.colleague = colleagueTiddlers[0];
+                                    }
+                                }
+                            }
+                            
+                            // Create author name with optional colleague link
+                            if (author.colleague) {
+                                const colleagueLink = document.createElement('a');
+                                colleagueLink.href = `#${encodeURIComponent(author.colleague)}`;
+                                colleagueLink.className = 'tc-tiddlylink tc-tiddlylink-resolves';
+                                colleagueLink.style.textDecoration = 'none';
+                                colleagueLink.style.color = 'inherit';
+                                colleagueLink.style.fontWeight = 'bold';
+                                colleagueLink.textContent = author.colleague;
+                                colleagueLink.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    if (story) {
+                                        story.addToStory(author.colleague, current_tiddler, {
+                                            openLinkFromInsideRiver: openLinkFromInsideRiver,
+                                            openLinkFromOutsideRiver: openLinkFromOutsideRiver
+                                        });
+                                        story.addToHistory(author.colleague);
+                                    }
+                                });
+                                authorSpan.appendChild(colleagueLink);
+                            } else {
+                                const nameText = document.createTextNode(authorName);
+                                authorSpan.appendChild(nameText);
+                            }
+                            
+                            // Add identifier links
+                            if (author.ORCID) {
+                                const orcidUrl = author.ORCID.startsWith('http') ? author.ORCID : `https://orcid.org/${author.ORCID}`;
+                                const orcidLink = document.createElement('a');
+                                orcidLink.href = orcidUrl;
+                                orcidLink.target = '_blank';
+                                orcidLink.className = 'tw-pubconnector-author-orcid';
+                                orcidLink.title = 'ORCID';
+                                orcidLink.innerHTML = ' ' + getSvgIcon('$:/plugins/bangyou/tw-pubconnector/images/orcid', '🆔');
+                                authorSpan.appendChild(orcidLink);
+                            }
+                            if (author.researcherId) {
+                                const wosLink = document.createElement('a');
+                                wosLink.href = `https://www.webofscience.com/wos/author/record/${author.researcherId}`;
+                                wosLink.target = '_blank';
+                                wosLink.className = 'tw-pubconnector-author-orcid';
+                                wosLink.title = 'Web of Science';
+                                wosLink.innerHTML = ' ' + getSvgIcon('$:/plugins/bangyou/tw-pubconnector/images/researcherid', '🔬');
+                                authorSpan.appendChild(wosLink);
+                            }
+                            if (author.authorId) {
+                                const scopusLink = document.createElement('a');
+                                scopusLink.href = `https://www.scopus.com/authid/detail.uri?authorId=${author.authorId}`;
+                                scopusLink.target = '_blank';
+                                scopusLink.className = 'tw-pubconnector-author-orcid';
+                                scopusLink.title = 'Scopus';
+                                scopusLink.innerHTML = ' ' + getSvgIcon('$:/plugins/bangyou/tw-pubconnector/images/scopus', ' 🔍');
+                                authorSpan.appendChild(scopusLink);
+                            }
+                            
+                            if (author.openalexId) {
+                                const openalexLink = document.createElement('a');
+                                openalexLink.href = `https://openalex.org/${author.openalexId}`;
+                                openalexLink.target = '_blank';
+                                openalexLink.className = 'tw-pubconnector-author-orcid';
+                                openalexLink.title = 'OpenAlex';
+                                openalexLink.innerHTML = ' ' + getSvgIcon('$:/plugins/bangyou/tw-pubconnector/images/openalex', ' 🌐');
+                                authorSpan.appendChild(openalexLink);
+                            }
+                            
+                            authorsContainer.appendChild(authorSpan);
+                        });
+                        
+                        // Add "and X more" if there are more than maxAuthors
+                        if (data.author.length > maxAuthors) {
+                            const moreSpan = document.createElement('span');
+                            moreSpan.className = 'tw-pubconnector-author-more';
+                            moreSpan.textContent = ` and ${data.author.length - maxAuthors} more`;
+                            moreSpan.style.fontStyle = 'italic';
+                            moreSpan.style.color = '#64748b';
+                            authorsContainer.appendChild(moreSpan);
+                        }
+                        
+                        authorsSection.appendChild(authorsContainer);
+                    }
+                    
+                    contentContainer.appendChild(authorsSection);
+                    
+                    // Journal and publication info
+                    const journalSection = document.createElement('div');
+                    journalSection.className = 'tw-pubconnector-journal-section';
+                    
+                    if (data['container-title']?.[0]) {
+                        const journalName = document.createElement('span');
+                        journalName.className = 'tw-pubconnector-journal-name';
+                        journalName.textContent = data['container-title'][0];
+                        journalSection.appendChild(journalName);
+                    }
+                    
+                    if (data.publisher) {
+                        const publisherSpan = document.createElement('span');
+                        publisherSpan.className = 'tw-pubconnector-publisher';
+                        publisherSpan.textContent = data.publisher;
+                        journalSection.appendChild(publisherSpan);
+                    }
+                    
+                    const pubDate = data['publicationDate'];
+                    if (pubDate) {
+                        let year, month, day;
+                        const dateObj = new Date(pubDate);
+                        year = dateObj.getFullYear();
+                        month = dateObj.getMonth() + 1;
+                        day = dateObj.getDate();
+                        const dateSpan = document.createElement('span');
+                        dateSpan.className = 'tw-pubconnector-date-badge';
+                        dateSpan.textContent = month ? `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}` : year;
+                        journalSection.appendChild(dateSpan);
+                    }
+                    
+                    contentContainer.appendChild(journalSection);
+                    
+                    // Footer with additional info
+                    const footer = document.createElement('div');
+                    footer.className = 'tw-pubconnector-footer';
+                    footer.style.display = 'flex';
+                    footer.style.flexWrap = 'wrap';
+                    footer.style.alignItems = 'center';
+                    footer.style.gap = '8px';
+                    
+                    const leftInfo = document.createElement('div');
+                    leftInfo.className = 'tw-pubconnector-footer-left';
+                    
+                    if (data['reference-count']) {
+                        const refsSpan = document.createElement('span');
+                        refsSpan.textContent = `📚 ${data['reference-count']} references`;
+                        leftInfo.appendChild(refsSpan);
+                    }
+                    
+                    if (data['is-referenced-by-count']) {
+                        const citedSpan = document.createElement('span');
+                        citedSpan.textContent = `📈 Cited ${data['is-referenced-by-count']} times`;
+                        leftInfo.appendChild(citedSpan);
+                    }
+                    
+                    footer.appendChild(leftInfo);
+                    
+                    const rightInfo = document.createElement('div');
+                    rightInfo.className = 'tw-pubconnector-footer-right';
+                    rightInfo.style.display = 'flex';
+                    rightInfo.style.flexWrap = 'wrap';
+                    rightInfo.style.gap = '6px';
+                    rightInfo.style.width = '100%';
+                    rightInfo.style.marginTop = '4px';
+                    
+                    
+                    platforms.forEach(platform => {
+                        const sourceSpan = document.createElement('span');
+                        sourceSpan.className = 'tw-pubconnector-source-badge';
+                        sourceSpan.textContent = `🔗 ${platform}`;
+                        rightInfo.appendChild(sourceSpan);
+                    });
+                    
+                    footer.appendChild(rightInfo);
+                    
+                    contentContainer.appendChild(footer);
+                    currentRefItem.appendChild(contentContainer);
+                    
+                } catch (error) {
+                    console.warn(`Failed to fetch crossref data for DOI ${currentItem.doi}:`, error);
+                    
+                    // Create fallback card design
+                    currentRefItem.innerHTML = '';
+                    
+                    // Create read button for fallback case too
+                    const cleanDoi = currentItem.doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
+                    const readButton = createReadButton(cleanDoi, currentRefItem, countElement);
+                    currentRefItem.appendChild(readButton);
+                    
+                    const fallbackContent = document.createElement('div');
+                    fallbackContent.className = 'tw-pubconnector-fallback';
+                    fallbackContent.innerHTML = `
+                        <div class="tw-pubconnector-fallback-icon">📄</div>
+                        <h3 class="tw-pubconnector-fallback-title">${currentItem.title || 'No title available'}</h3>
+                        <p class="tw-pubconnector-fallback-subtitle">Unable to load additional details</p>
+                        <a href="${currentItem.doi.startsWith('https://') ? currentItem.doi : `https://doi.org/${currentItem.doi}`}" 
+                           target="_blank" 
+                           class="tw-pubconnector-fallback-button">
+                            View DOI
+                        </a>
+                    `;
+                    
+                    // Add platform information to fallback
+                    const fallbackFooter = document.createElement('div');
+                    fallbackFooter.className = 'tw-pubconnector-footer';
+                    
+                    const fallbackLeftInfo = document.createElement('div');
+                    fallbackLeftInfo.className = 'tw-pubconnector-footer-left';
+                    fallbackFooter.appendChild(fallbackLeftInfo);
+                    
+                    const fallbackRightInfo = document.createElement('div');
+                    fallbackRightInfo.className = 'tw-pubconnector-footer-right';
+                    
+                    // Convert platform to array if needed and create badges
+                    const platforms = Array.isArray(currentItem.platform) ? currentItem.platform : [currentItem.platform || 'Unknown'];
+                    platforms.forEach(platform => {
+                        const sourceSpan = document.createElement('span');
+                        sourceSpan.className = 'tw-pubconnector-source-badge';
+                        sourceSpan.textContent = `🔗 ${platform}`;
+                        fallbackRightInfo.appendChild(sourceSpan);
+                    });
+                    
+                    fallbackFooter.appendChild(fallbackRightInfo);
+                    fallbackContent.appendChild(fallbackFooter);
+                    
+                    currentRefItem.appendChild(fallbackContent);
+                }
+            })();
+        }
+        
+        return {
+            card: card,
+            cardFromDOIs: cardFromDOIs
+        };
+    }
+
+
+    exports.Literature = Literature;
+

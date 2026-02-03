@@ -1,0 +1,110 @@
+module-type: route
+revision: 0
+title: $:/plugins/bangyou/tw-pubconnector/route/literature/mark-read.js
+type: application/javascript
+
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/route/literature/mark-read.js
+type: application/javascript
+module-type: route
+
+TiddlyWiki Route: POST /^\/literature\/mark-read$/
+
+Marks a literature item as read by storing its DOI in the cache.
+
+Request:
+  - Method: POST
+  - Path: /literature/mark-read
+  - Content-Type: application/json
+  - Body: { "doi": "10.1038/nature12373" }
+
+Response:
+  - 200: Successfully marked as read
+  - 400: Bad Request (missing or invalid DOI)
+  - 500: Server error
+
+Response Format:
+  Success:
+  {
+    "status": "success",
+    "code": 200,
+    "message": "DOI marked as read successfully",
+    "data": { "doi": "10.1038/nature12373" }
+  }
+
+  Error:
+  {
+    "status": "error",
+    "code": 400|500,
+    "message": "Error description"
+  }
+
+Usage Examples:
+  - POST /literature/mark-read
+    Body: { "doi": "10.1038/nature12373" }
+  - POST /literature/mark-read
+    Body: { "doi": "https://doi.org/10.1038/nature12373" }
+
+Dependencies:
+  - $:/plugins/bangyou/tw-pubconnector/api/reading.js (Reading API for cache management)
+
+@module $:/plugins/bangyou/tw-pubconnector/route/literature/mark-read.js
+@method POST
+@route /^\/literature\/mark-read$/
+@platforms ["node"]
+@param {Object} request - HTTP request object
+@param {Object} response - HTTP response object  
+@param {Object} state - State object (unused in this route)
+@returns {void}
+
+\*/
+(function () {
+	/*jslint node: true, browser: true */
+	/*global $tw: false */
+	"use strict";
+
+	if (!$tw.node) {
+		return;
+	}
+
+	var Reading = require("$:/plugins/bangyou/tw-pubconnector/api/reading.js").Reading;
+
+	exports.method = "POST";
+	exports.platforms = ["node"];
+	exports.path = /^\/literature\/mark-read$/;
+
+	exports.handler = function (request, response, state) {
+        try {
+            const data = JSON.parse(state.data);
+            const doi = data.doi;
+            if (!doi || typeof doi !== 'string') {
+                response.writeHead(400, { "Content-Type": "application/json" });
+                response.end(JSON.stringify({
+                    status: "error",
+                    code: 400,
+                    message: "Invalid data format"
+                }));
+            }
+            const reading = new Reading();
+            reading.markAsRead(doi);
+            response.writeHead(200, { "Content-Type": "application/json" });
+            response.end(JSON.stringify({
+                status: "success",
+                code: 200,
+                message: "DOI marked as read successfully",
+                data: { doi: doi }
+            }));
+            return;
+        } catch (err) {
+            response.writeHead(500, { "Content-Type": "application/json" });
+            response.end(JSON.stringify({
+                status: "error",
+                code: 500,
+                message: err.message
+            }));
+            return;
+        }
+		
+	};
+
+}());

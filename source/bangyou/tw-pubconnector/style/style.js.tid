@@ -1,0 +1,12 @@
+created: 20250529060251260
+modified: 20250529060333226
+revision: 0
+tags: 
+title: $:/plugins/bangyou/tw-pubconnector/style/style.js
+type: text/css
+
+.tw-highlighted-text {
+    background-color: yellow;
+    border-radius: 2px;
+    padding: 0 2px;
+}

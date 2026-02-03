@@ -1,0 +1,328 @@
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/api/crossref.js
+type: application/javascript
+module-type: library
+
+Crossref API utility for TiddlyWiki
+
+\*/
+
+(function (exports) {
+    'use strict';
+    if (!$tw.node) {
+        return;
+    }
+
+    const fetch = require('node-fetch');
+    
+    const platform_field = "crossref"; // Field in tiddler that contains the Crossref ID
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('crossref', 9999999);
+    
+    // Rate limiting: Conservative approach to avoid 429 errors
+    const MIN_REQUEST_INTERVAL = 350; // 350ms = ~2.9 requests/sec (conservative but reasonable)
+    const MAX_RETRIES = 3;
+    const INITIAL_RETRY_DELAY = 2000; // Start with 2 second delay for retries
+
+    function Crossref(host = "https://api.crossref.org/") {
+        const this_host = host.replace(/\/+$/, "");
+        
+        // Request queue to ensure sequential processing
+        let requestQueue = Promise.resolve();
+        let lastRequestTime = 0;
+
+        function isEnabled() {
+            return true;
+        }
+
+        function buildCrossRefApiUrl(path, query = {}) {
+            const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+            const queryString = Object.keys(query)
+                .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key]))
+                .join('&');
+            return `${this_host}${normalizedPath}${queryString ? `?${queryString}` : ""}`;
+        }
+
+        async function makeRequest(url, retryCount = 0) {
+            // Enforce rate limiting: wait if needed to maintain minimum interval between requests
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+                const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+                console.log(`Crossref rate limiting: waiting ${waitTime}ms before next request`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+
+            // Update last request time before making the request
+            lastRequestTime = Date.now();
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                
+                // Handle 429 rate limit errors with exponential backoff
+                if (response.status === 429 && retryCount < MAX_RETRIES) {
+                    const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+                    console.log(`Crossref 429 error (attempt ${retryCount + 1}/${MAX_RETRIES}): retrying after ${retryDelay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    return makeRequest(url, retryCount + 1);
+                }
+                
+                console.error(`Crossref API Error ${response.status}: ${errorText}`);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            }
+            return response.json();
+        }
+
+        async function crossrefRequest(url, retryCount = 0) {
+            // Add request to queue to ensure sequential processing
+            return new Promise((resolve, reject) => {
+                requestQueue = requestQueue
+                    .then(() => makeRequest(url, retryCount))
+                    .then(resolve)
+                    .catch(reject);
+            });
+        }
+
+        async function getWorksByDOI(doi, simplify = false) {
+            if (!isEnabled()) {
+                throw new Error("Crossref API is disabled");
+            }
+            
+            doi = decodeURIComponent(doi);
+            const key = doi;
+            
+            // Check cache first
+            const cached = cacheHelper.getCacheByKey(key);
+            if (cached) {
+                if (simplify && cached.item.message) {
+                    return simplifyWorkData(cached.item);
+                }
+                return cached.item;
+            }
+
+            const url = buildCrossRefApiUrl(`/works/${encodeURIComponent(doi)}`);
+            const result = await crossrefRequest(url);
+
+            // Update cache
+            cacheHelper.addEntry(key, result);
+
+            if (simplify && result.message) {
+                return simplifyWorkData(result);
+            }
+
+            return result;
+        }
+
+        function convertDatePartsToDate(dateObj) {
+            if (!dateObj || !dateObj['date-parts'] || !Array.isArray(dateObj['date-parts']) || dateObj['date-parts'].length === 0) {
+                return null;
+            }
+            const parts = dateObj['date-parts'][0];
+            if (!parts || parts.length === 0) {
+                return null;
+            }
+            const year = parts[0];
+            const month = parts[1] ? parts[1] - 1 : 0; // JavaScript months are 0-indexed
+            const day = parts[2] ? parts[2] : 1;
+            return new Date(year, month, day);
+        }
+
+        function simplifyWorkData(workData) {
+            const data = workData.message;
+            return {
+                message: {
+                    doi: data.DOI,
+                    title: data.title,
+                    author: data.author,
+                    'container-title': data['container-title'],
+                    publisher: data.publisher,
+                    publicationDate: convertDatePartsToDate(data['published']),
+                    'reference-count': data['reference-count'],
+                    'is-referenced-by-count': data['is-referenced-by-count']
+                }
+            };
+        }
+
+        function removeExpiredEntries() {
+            cacheHelper.removeExpiredEntries();
+        }
+
+        function getPlatformField() {
+            return platform_field;
+        }
+
+        async function getReferencesByDOI(doi) {
+            const work = await getWorksByDOI(doi);
+            
+            if (!work || !work.message || !work.message['reference']) {
+                return [];
+            }
+            const references = work.message['reference'];
+            return references.map(ref => {
+                // Create a copy of the reference object
+                const processedRef = { ...ref };
+                
+                // Rename DOI to doi if it exists
+                if (processedRef.DOI) {
+                    processedRef.doi = processedRef.DOI;
+                    delete processedRef.DOI;
+                }
+                
+                // Rename article-title to title if it exists
+                if (processedRef['article-title']) {
+                    processedRef.title = processedRef['article-title'];
+                    delete processedRef['article-title'];
+                }
+                
+                return processedRef;
+            });
+        }
+
+        /**
+         * Find DOI based on metadata (title, author, publisher, year)
+         * Priority: title > publisher > year > author
+         * @param {Object} metadata - Object containing title, author, publisher, year
+         * @returns {Promise<string|null>} - DOI if found, null otherwise
+         */
+        async function findDOIByMetadata(metadata) {
+            if (!isEnabled()) {
+                throw new Error("Crossref API is disabled");
+            }
+
+            const { title, author, publisher, year } = metadata;
+
+            if (!title) {
+                console.warn('Title is required for DOI lookup');
+                return null;
+            }
+
+            // Build search query with priority: title (required), then add other fields
+            const query = {};
+            
+            // Clean and prepare title (remove truncation markers like "...")
+            const cleanTitle = title.replace(/…$/, '').trim();
+            query['query.title'] = cleanTitle;
+
+            // Add bibliographic filter if we have publisher info
+            if (publisher) {
+                query['query.bibliographic'] = publisher;
+            }
+
+            // Add author if available
+            if (author) {
+                // Extract first author name if multiple authors
+                const firstAuthor = author.split(',')[0].trim();
+                query['query.author'] = firstAuthor;
+            }
+
+            // Filter by publication year if available
+            // if (year) {
+            //     const yearMatch = year.match(/\b(19|20)\d{2}\b/);
+            //     if (yearMatch) {
+            //         query['filter'] = `from-pub-date:${yearMatch[0]},until-pub-date:${yearMatch[0]}`;
+            //     }
+            // }
+
+            // Limit results and sort by relevance
+            query['rows'] = '5';
+            query['sort'] = 'score';
+
+            const url = buildCrossRefApiUrl('/works', query);
+            try {
+                const result = await crossrefRequest(url);
+
+                if (!result || !result.message || !result.message.items || result.message.items.length === 0) {
+                    console.log('No DOI found for metadata:', metadata);
+                    return null;
+                }
+
+                // Get the best match (highest score)
+                const bestMatch = result.message.items[0];
+                
+                // Calculate similarity score for validation
+                const matchTitle = (bestMatch.title && bestMatch.title[0]) ? bestMatch.title[0].toLowerCase() : '';
+                const searchTitle = cleanTitle.toLowerCase();
+                
+                // Simple similarity check: if titles share significant words
+                const titleWords = searchTitle.split(/\s+/).filter(w => w.length > 3);
+                const matchWords = matchTitle.split(/\s+/).filter(w => w.length > 3);
+                const commonWords = titleWords.filter(w => matchWords.includes(w));
+                const similarity = commonWords.length / titleWords.length;
+
+                // Return DOI if similarity is reasonable (>50% common words)
+                if (similarity > 0.5) {
+                    console.log(`Found DOI: ${bestMatch.DOI} (similarity: ${(similarity * 100).toFixed(1)}%)`);
+                    return {doi: bestMatch.DOI, similarity: similarity};
+                } else {
+                    console.log(`Low similarity match (${(similarity * 100).toFixed(1)}%), skipping:`, metadata);
+                    return null;
+                }
+
+            } catch (error) {
+                console.error('Error finding DOI:', error);
+                return null;
+            }
+        }
+
+        /**
+         * Parse a citation string into metadata components
+         * Example: "Global Change Biology 18 (9), 2899-2914, 2012"
+         * @param {string} citationString - Publisher/citation string
+         * @returns {Object} - Parsed metadata with publisher and year
+         */
+        function parseCitationString(citationString) {
+            if (!citationString) return {};
+
+            const metadata = {};
+            
+            // Extract year (4-digit number)
+            const yearMatch = citationString.match(/\b(19|20)\d{2}\b/);
+            if (yearMatch) {
+                metadata.year = yearMatch[0];
+            }
+
+            // Extract publisher/journal name (everything before volume/issue pattern)
+            const publisherMatch = citationString.match(/^([^,\d]+?)(?:\s+\d+\s*\(|,)/);
+            if (publisherMatch) {
+                metadata.publisher = publisherMatch[1].trim();
+            } else {
+                // If no clear pattern, take everything before the first comma or number
+                metadata.publisher = citationString.split(/[,\d]/)[0].trim();
+            }
+
+            return metadata;
+        }
+
+        /**
+         * Convenience function that takes raw fields and finds DOI
+         * @param {string} title - Article title
+         * @param {string} author - Author string (e.g., "B Zheng, K Chenu, ...")
+         * @param {string} publisherString - Publisher/citation string
+         * @returns {Promise<string|null>} - DOI if found
+         */
+        async function findDOI(title, author, publisherString) {
+            const parsed = parseCitationString(publisherString);
+            
+            return findDOIByMetadata({
+                title: title,
+                author: author,
+                publisher: parsed.publisher,
+                year: parsed.year
+            });
+        }
+
+        return {
+            isEnabled: isEnabled,
+            getWorksByDOI: getWorksByDOI,
+            getReferencesByDOI: getReferencesByDOI,
+            removeExpiredEntries: removeExpiredEntries,
+            getPlatformField: getPlatformField,
+            findDOIByMetadata: findDOIByMetadata,
+            findDOI: findDOI,
+            parseCitationString: parseCitationString
+        };
+    }
+
+    exports.Crossref = Crossref;
+})(exports);

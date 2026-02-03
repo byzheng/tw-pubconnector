@@ -1,0 +1,151 @@
+caption: Authoring
+created: 20250615013742838
+modified: 20250805013752335
+tags: $:/tags/ControlPanel/Settings/tw-pubconnector
+title: $:/plugins/bangyou/tw-pubconnector/settings/authoring
+type: text/vnd.tiddlywiki
+
+
+The tiddlers with tag `Colleague` is used to filter authors for publication. 
+
+
+
+
+----
+
+
+<$link to="$:/config/tw-pubconnector/authoring/expired-days">Expired Days Author's Publication</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/expired-days" default="30" tag="input" />
+
+
+The author's publication will be retrieved after expired days.
+
+----
+
+
+<$link to="$:/config/tw-pubconnector/authoring/delete-maximum">Maximum Item to Delete</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/delete-maximum" default="10" tag="input" />
+
+
+The maximum number of items is deleted at each request.
+
+----
+
+!! Automatic Updates
+
+Automatically update caches for authoring at the scheduled hour and minute.
+
+* If **Hour** is set to `-1`, the update will run **every hour**.
+* If **Minute** is set to `-1`, the update will run **every minute**.
+* If both are `-1`, the update will run **every minute of every hour**.
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/auto-update/enable" field="text" checked="enable" unchecked="disable" default="disable">
+  <$link to="$:/config/tw-pubconnector/authoring/auto-update/enable">Enable Automatic Updates</$link>
+</$checkbox>
+
+
+* Hour: <$edit-text tiddler="$:/config/tw-pubconnector/authoring/auto-update/hour" type="number"  default="-1" tag="input" min="-1" max="23" /> (Allowed: -1 or 0–23)
+* Minute: <$edit-text tiddler="$:/config/tw-pubconnector/authoring/auto-update/minute" type="number"  default="-1" tag="input" min="-1" max="58" /> (Allowed: -1 or 0–58). The maximum value `58` is to allow client side to process the request at the next minute.
+
+----
+
+
+!! Homepage
+
+The field `url` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. All DOIs in the homepage is assumed as author's publications.
+
+
+<$link to="$:/config/tw-pubconnector/authoring/homepage/enable">Retrieve Publication from Homepage</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/homepage/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/homepage/enable">Enable Homepage</$link></$checkbox>
+
+
+----
+!! Google Scholar
+
+The field `google-scholar` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. The feature depends on the Chrome Extension [ext[PubConnector|https://github.com/byzheng/PubConnector]]. New pages will be open in the browser at the scheduled time.
+
+<$link to="$:/config/tw-pubconnector/authoring/scholar/enable">Retrieve Publication from Google Scholar</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/scholar/enable" field="text" checked="enable" unchecked="disable" default="disable"><$link to="$:/config/tw-pubconnector/authoring/scholar/enable">Enable Google Scholar</$link></$checkbox>
+
+
+
+<$link to="$:/config/tw-pubconnector/authoring/scholar/daily-limit">Limit to Open Scholar Pages</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/scholar/daily-limit" default="5" tag="input" />
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/scholar/auto-close" field="text" checked="enable" unchecked="disable" default="disable"><$link to="$:/config/tw-pubconnector/authoring/scholar/auto-close">Automatically Close Tab</$link></$checkbox>
+
+----
+!! ORCID
+
+The field `orcid` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. 
+
+<$link to="$:/config/tw-pubconnector/authoring/orcid/enable">Retrieve Publication from Web of Science</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/orcid/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/orcid/enable">Enable ORCID</$link></$checkbox>
+
+
+
+<$link to="$:/config/tw-pubconnector/authoring/orcid/daily-limit">Daily Limit of API Requests</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/orcid/daily-limit" default="25000" tag="input" />
+
+
+----
+!! Web of Science
+
+The field `researcherid` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. 
+
+<$link to="$:/config/tw-pubconnector/authoring/wos/enable">Retrieve Publication from Web of Science</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/wos/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/wos/enable">Enable Web of Science</$link></$checkbox>
+
+
+<$link to="$:/config/tw-pubconnector/authoring/wos/api">API Key for Web of Science</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/wos/api" default="" tag="input" />
+
+
+<$link to="$:/config/tw-pubconnector/authoring/wos/daily-limit">Daily Limit of API Requests</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/wos/daily-limit" default="5000" tag="input" />
+
+
+
+----
+!! Scopus
+
+The field `scopus` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. 
+
+<$link to="$:/config/tw-pubconnector/authoring/scopus/enable">Retrieve Publication from Scopus</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/scopus/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/scopus/enable">Enable Scopus</$link></$checkbox>
+
+
+<$link to="$:/config/tw-pubconnector/authoring/scopus/api">API Key for Scopus</$link> 
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/scopus/api" default="" tag="input" />
+
+
+<$link to="$:/config/tw-pubconnector/authoring/scopus/daily-limit">Daily Limit of API Requests</$link> 
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/scopus/daily-limit" default="2000" tag="input" />
+
+
+----
+!! OpenAlex
+
+The field `openalex` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. 
+
+<$link to="$:/config/tw-pubconnector/authoring/openalex/enable">Retrieve Publication from OpenAlex</$link> 
+
+<$checkbox tiddler="$:/config/tw-pubconnector/authoring/openalex/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/openalex/enable">Enable OpenAlex</$link></$checkbox>
+
+
+<$link to="$:/config/tw-pubconnector/authoring/openalex/daily-limit">Daily Limit of API Requests</$link> 
+
+<$edit-text tiddler="$:/config/tw-pubconnector/authoring/openalex/daily-limit" default="25000" tag="input" />
+
+

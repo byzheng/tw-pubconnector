@@ -1,0 +1,390 @@
+created: 20250610231625105
+creator: Bangyou Zheng
+modified: 20250610231642671
+modifier: Bangyou Zheng
+module-type: library
+revision: 0
+tags: 
+title: $:/plugins/bangyou/tw-pubconnector/api/scopus.js
+type: application/javascript
+
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/utils/scopus.js
+type: application/javascript
+module-type: library
+
+Scopus utility for TiddlyWiki
+
+\*/
+
+
+(function (exports) {
+    'use strict';
+    if (!$tw.node) {
+        return;
+    }
+    const fetch = require('node-fetch');
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("scopus", 9999999);
+    const scopus_daily_request_count_key = "__scopus_daily_request_count";
+    
+    const platform_field = "scopus"; // Field in tiddler that contains the Scopus author ID
+
+    function SCOPUS(host = "https://api.elsevier.com") {
+        const this_host = host.replace(/\/+$/, "");
+        const path_scopus_search = "/content/search/scopus";
+        const path_abstract_retrieval = "/content/abstract/doi";
+        
+        // Cache the authorId to colleague mapping
+        let authorIdToColleagueCache = null;
+        
+        function getAuthorIdToColleagueMap() {
+            if (authorIdToColleagueCache !== null) {
+                return authorIdToColleagueCache;
+            }
+            
+            const map = new Map();
+            const colleagueTiddlers = $tw.wiki.filterTiddlers('[tag[Colleague]has[scopus]]');
+            colleagueTiddlers.forEach(tiddlerTitle => {
+                const tiddler = $tw.wiki.getTiddler(tiddlerTitle);
+                if (tiddler && tiddler.fields.scopus) {
+                    const authorId = extractAuthorId(tiddler.fields.scopus);
+                    if (authorId) {
+                        map.set(authorId, tiddlerTitle);
+                    }
+                }
+            });
+            
+            authorIdToColleagueCache = map;
+            return map;
+        }
+
+        function isEnabled() {
+            let tiddler = $tw.wiki.getTiddler("$:/config/tw-pubconnector/authoring/scopus/enable");
+            if (!tiddler) {
+                return true; // default to enabled ("yes")
+            }
+            return tiddler && tiddler.fields.text === "enable";
+        }
+
+        function getScopusDailyLimit() {
+            if (typeof $tw !== "undefined" && $tw.wiki) {
+                const limitText = $tw.wiki.getTiddlerText("$:/config/tw-pubconnector/authoring/scopus/daily-limit", "").trim();
+                const limit = parseInt(limitText, 10);
+                return isNaN(limit) ? 2000 : limit; 
+            }
+            return 2000;
+        }
+
+        function getScopusApiKey() {
+            if (typeof $tw !== "undefined" && $tw.wiki) {
+                return $tw.wiki.getTiddlerText("$:/config/tw-pubconnector/authoring/scopus/api", "").trim();
+            }
+            return "";
+        }
+
+        function buildScopusApiUrl(path, query = {}) {
+            const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+            const queryString = Object.keys(query)
+                .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key]))
+                .join('&');
+            return `${this_host}${normalizedPath}${queryString ? `?${queryString}` : ""}`;
+        }
+
+        function getRateLimitInfo() {
+            let rateLimitObj = cacheHelper.getCacheByKey(scopus_daily_request_count_key);
+            if (!rateLimitObj || !rateLimitObj.item) {
+                return null;
+            }
+            return rateLimitObj.item;
+        }
+
+        function updateRateLimitInfo(headers) {
+            const limit = headers.get('x-ratelimit-limit');
+            const remaining = headers.get('x-ratelimit-remaining');
+            const reset = headers.get('x-ratelimit-reset');
+            if (limit || remaining || reset) {
+                const rateLimitInfo = {
+                    limit: limit ? parseInt(limit, 10) : null,
+                    remaining: remaining ? parseInt(remaining, 10) : null,
+                    reset: reset ? parseInt(reset, 10) : null,
+                    lastUpdated: Date.now()
+                };
+                
+                cacheHelper.addEntry(scopus_daily_request_count_key, rateLimitInfo, undefined, false);
+                return rateLimitInfo;
+            }
+            return null;
+        }
+
+        async function scopusRequest(url) {
+            // Check rate limit before making request
+            const rateLimitInfo = getRateLimitInfo();
+            if (rateLimitInfo && rateLimitInfo.remaining !== null) {
+                if (rateLimitInfo.remaining <= 0) {
+                    const resetTime = rateLimitInfo.reset ? new Date(rateLimitInfo.reset * 1000) : null;
+                    const resetMsg = resetTime ? ` Quota resets at ${resetTime.toLocaleString()}.` : '';
+                    throw new Error(`Scopus API rate limit reached (${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining).${resetMsg}`);
+                }
+                console.log(`Scopus API quota: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining`);
+            }
+
+            const apiKey = getScopusApiKey();
+            if (!apiKey || apiKey === "") {
+                console.error("Scopus API key is not configured. Please set it in $:/config/tw-pubconnector/authoring/scopus/api tiddler.");
+                return;
+            }
+            const headers = {
+                "X-ELS-APIKey": apiKey,
+                "Accept": "application/json"
+            };
+            const response = await fetch(url, { headers });
+            
+            // Update rate limit info from response headers
+            updateRateLimitInfo(response.headers);
+            
+            // Simulate a delay to avoid hitting rate limits too quickly
+            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Scopus API Error ${response.status}: ${errorText}`);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            }
+            return response.json();
+        }
+
+        async function scopusWorksGet(authorId) {
+            // Build query URL for Scopus search by author ID
+            const query = `AU-ID(${authorId})`;
+            const url = buildScopusApiUrl(path_scopus_search, { 
+                query: query,
+                count: 25
+            });
+            const response = await scopusRequest(url);
+            if (!response || !response['search-results'] || !response['search-results'].entry) {
+                return [];
+            }
+
+            let allEntries = response['search-results'].entry;
+
+            const totalResults = parseInt(response['search-results']['opensearch:totalResults']) || 0;
+            const itemsPerPage = parseInt(response['search-results']['opensearch:itemsPerPage']) || 25;
+            const startIndex = parseInt(response['search-results']['opensearch:startIndex']) || 0;
+
+            // If there are more results, fetch additional pages
+            if (totalResults > itemsPerPage) {
+                const pages = Math.ceil(totalResults / itemsPerPage);
+                for (let i = 1; i < pages; i++) {
+                    const nextUrl = buildScopusApiUrl(path_scopus_search, { 
+                        query: query,
+                        count: itemsPerPage,
+                        start: i * itemsPerPage
+                    });
+                    const pageResponse = await scopusRequest(nextUrl);
+                    if (pageResponse && pageResponse['search-results'] && pageResponse['search-results'].entry) {
+                        allEntries = allEntries.concat(pageResponse['search-results'].entry);
+                    }
+                }
+            }
+
+            return allEntries;
+        }
+
+        function extractAuthorId(input) {
+            if (!input) return "";
+            // If input is just the numeric id (e.g., "12345678900"), return as is
+            if (/^\d+$/.test(input)) {
+                return input;
+            }
+            // Try to extract from known URL patterns
+            // https://www.scopus.com/authid/detail.uri?authorId=12345678900
+            const match = input.match(/authorId=(\d+)/i);
+            return match ? match[1] : input;
+        }
+
+        async function cacheWorks(authorId) {
+            if (!isEnabled()) {
+                return;
+            }
+            authorId = decodeURIComponent(authorId);
+            if (!authorId || authorId.length === 0) {
+                throw new Error("Invalid author ID provided");
+            }
+            authorId = extractAuthorId(authorId);
+            if (!authorId || authorId.length === 0 || !/^\d+$/.test(authorId)) {
+                throw new Error(`Invalid Scopus author ID: ${authorId}`);
+            }
+            const cacheResult = cacheHelper.getCacheByKey(authorId);
+            if (cacheResult) {
+                return cacheResult.item;
+            }
+            const works = await scopusWorksGet(authorId);
+            if (!works || works.length === 0) {
+                throw new Error(`No works found for Scopus author ID: ${authorId}`);
+            }
+            await cacheHelper.addEntry(authorId, works);
+
+            return works;
+        }
+
+        function getAuthorByDOI(doi) {
+            if (!isEnabled()) {
+                return [];
+            }
+            if (!doi || doi.length === 0) {
+                throw new Error("Invalid DOI provided");
+            }
+            if (typeof doi !== "string") {
+                throw new Error("DOI must be a string");
+            }
+            const caches = cacheHelper.getCaches();
+            if (!caches || caches.length === 0) {
+                return [];
+            }
+            const result = [];
+            for (const key in caches) {
+                if (key === scopus_daily_request_count_key) {
+                    continue; // Skip the daily request count cache
+                }
+                if (Object.prototype.hasOwnProperty.call(caches, key)) {
+                    const cache = caches[key];
+                    if (!Array.isArray(cache.item)) {
+                        continue;
+                    }
+                    for (const item of cache.item) {
+                        if (item && item['prism:doi'] &&
+                            item['prism:doi'].toLowerCase() === doi.toLowerCase()) {
+                            result.push(key);
+                            break;
+                        }
+                    }
+                }
+            }
+            // Find tiddlers whose 'scopus' field matches any key in result using a filter
+            if (result.length === 0) {
+                return [];
+            }
+            const filter = `[tag[Colleague]search:scopus:regexp[${result.join("|")}]]`;
+            const matchingTiddlers = $tw.wiki.filterTiddlers(filter);
+            return matchingTiddlers;
+        }
+
+        function removeExpiredEntries() {
+            cacheHelper.removeExpiredEntries();
+        }
+
+        // Get latest works within the past 'days' days
+        function getLatest(days = 90) {
+            if (!isEnabled()) {
+                return [];
+            }
+            
+            // Get cached map of authorId -> colleague name for fast lookup
+            //const authoridToColleague = getAuthorIdToColleagueMap();
+            
+            const works = cacheHelper.getCaches();
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            const recentWorks = [];
+
+            for (const authorId in works) {
+                if (authorId === scopus_daily_request_count_key) {
+                    continue;
+                }
+                
+                if (!Object.prototype.hasOwnProperty.call(works, authorId)) {
+                    continue;
+                }
+                const authorWorks = works[authorId];
+                if (!Array.isArray(authorWorks.item)) {
+                    continue;
+                }
+                for (const work of authorWorks.item) {
+                    if (!work || !work['prism:coverDate']) {
+                        continue;
+                    }
+                    // Parse date from Scopus format (e.g., "2025-08-25")
+                    const workDate = new Date(work['prism:coverDate']);
+                    
+                    if (isNaN(workDate.getTime()) || workDate < cutoffDate) {
+                        continue;
+                    }
+                    
+                    if (!work['prism:doi'] || work['prism:doi'] === "") {
+                        continue;
+                    }
+                    const doi = work['prism:doi'];
+                    
+                    // Extract and format authors
+                    const authors = [];
+                    if (work.author && Array.isArray(work.author)) {
+                        work.author.forEach(author => {
+                            authors.push({
+                                given: author['given-name'] || author.givenname || "",
+                                family: author.surname || author['ce:surname'] || "",
+                                authorId: author['authid'] || undefined,
+                                ORCID: author['orcid'] || author['@orcid'] || undefined
+                            });
+                        });
+                    }
+                    recentWorks.push({
+                        colleagueId: authorId,
+                        doi: doi,
+                        title: work['dc:title'] ? work['dc:title'] : "",
+                        publicationDate: workDate,
+                        eid: work['eid'] || "",
+                        platform: "Scopus",
+                        author: authors.length > 0 ? authors : undefined,
+                        'container-title': work['prism:publicationName'] ? [work['prism:publicationName']] : undefined,
+                        publisher: work['dc:publisher'] || work['prism:publisher'] || undefined,
+                        'reference-count': work['citedby-count'] ? parseInt(work['citedby-count']) : undefined,
+                        'is-referenced-by-count': work['citedby-count'] ? parseInt(work['citedby-count']) : undefined
+                    });
+                }
+            }
+            console.log("Recent works from Scopus:", recentWorks.length);
+            return recentWorks;
+        }
+
+        // Get EID for a DOI
+        async function getEIDByDOI(doi) {
+            if (!isEnabled()) {
+                return null;
+            }
+            if (!doi || doi.length === 0) {
+                throw new Error("Invalid DOI provided");
+            }
+            
+            const url = buildScopusApiUrl("/content/abstract/doi/" + encodeURIComponent(doi));
+            
+            try {
+                const response = await scopusRequest(url);
+                if (response && response['abstracts-retrieval-response'] && 
+                    response['abstracts-retrieval-response'].coredata) {
+                    return response['abstracts-retrieval-response'].coredata.eid || null;
+                }
+            } catch (error) {
+                console.log(`Could not get EID for DOI ${doi}: ${error.message}`);
+                return null;
+            }
+            return null;
+        }
+
+        return {
+            isEnabled: isEnabled,
+            cacheWorks: cacheWorks,
+            getAuthorByDOI: getAuthorByDOI,
+            getPlatformField: function () {
+                return platform_field;
+            },
+            removeExpiredEntries: removeExpiredEntries,
+            getLatest: getLatest,
+            getEIDByDOI: getEIDByDOI
+        };
+
+    }
+
+
+    exports.SCOPUS = SCOPUS;
+})(exports);
+

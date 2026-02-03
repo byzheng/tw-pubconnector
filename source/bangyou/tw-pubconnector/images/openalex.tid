@@ -1,0 +1,24 @@
+created: 20260105041409106
+creator: Bangyou Zheng
+modified: 20260105042253753
+modifier: Bangyou Zheng
+revision: 0
+tags: $:/tags/Image Icons Images SVG
+title: $:/plugins/bangyou/tw-pubconnector/images/openalex
+type: text/vnd.tiddlywiki
+
+<svg width="22px" height="22pt" viewBox="0 0 128 128"
+     xmlns="http://www.w3.org/2000/svg"
+     aria-label="OpenAlex Icon">
+  <!-- Open ring -->
+  <circle cx="64" cy="64" r="44"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="12"
+          stroke-linecap="round"
+          stroke-dasharray="250 60"/>
+
+  <!-- Single knowledge node -->
+  <circle cx="64" cy="36" r="8" fill="currentColor"/>
+</svg>
+

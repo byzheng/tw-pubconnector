@@ -1,0 +1,11 @@
+caption: Connector
+created: 20250614225529306
+modified: 20250615020620849
+revision: 0
+tags: $:/tags/ControlPanel/SettingsTab
+title: $:/plugins/bangyou/tw-pubconnector/settings
+type: text/vnd.tiddlywiki
+
+
+<<tabs "[all[shadows+tiddlers]tag[$:/tags/ControlPanel/Settings/tw-pubconnector]]" "$:/plugins/bangyou/tw-pubconnector/settings/image" "$:/state/tw-pubconnector-settings" "tc-vertical">>
+

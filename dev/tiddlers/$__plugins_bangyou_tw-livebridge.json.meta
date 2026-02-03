@@ -1,0 +1,14 @@
+author: Bangyou Zheng
+core-version: >5.1.23
+created: 20241208234130793
+description: Real-time WebSocket bridge between TiddlyWiki and VS Code for instant editing and preview.
+list: readme license
+modified: 20260112002927027
+name: tw-livebridge
+packaged-by: Gatha on 12th January 2026, 10:36:28
+plugin-type: plugin
+source: https://tw-livebridge.bangyou.me
+tags: 
+title: $:/plugins/bangyou/tw-livebridge
+type: application/json
+version: 0.1.2

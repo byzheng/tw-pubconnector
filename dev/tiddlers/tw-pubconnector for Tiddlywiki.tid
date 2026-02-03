@@ -1,0 +1,38 @@
+created: 20221021042001530
+modified: 20251224003553949
+tags: doc start
+title: tw-pubconnector for Tiddlywiki
+type: text/vnd.tiddlywiki
+
+\import [[Plugin Data]]
+
+\define output(p)
+<$wikify text=<<__p__>> name=result mode=block output="html">
+<<result>>
+</$wikify>
+\end
+
+
+{{Plugin Status}}
+
+<span style="float:right;width:72px">{{$:/favicon.ico}}</span>
+
+
+!! What is <<plugindisplayName>>?
+<<<
+<$macrocall $name=find text={{{ [<pluginReadme>get[text]] }}} begin="
+" end=";" mode="first" output="output"/>
+<<<
+
+!! Tutorials
+> No user interactions are required for this plugin.
+
+!! Code and demo
+
+* Demo: <<plugindemoUrl>>
+* Code: <<plugincodeUrl>>
+
+<$list filter="[tag[doc]tag[info]has[text]!has[draft.of]]">
+<h2>{{!!title}}</h2>
+<blockquote><$transclude tiddler=<<currentTiddler>> mode=block/></blockquote>
+</$list>

@@ -1,0 +1,14 @@
+{
+    "title": "$:/plugins/bangyou/tw-pubconnector",
+    "name": "tw-pubconnector",
+    "description": "A small plugin for Chrome Extension PubConnector",
+    "author": "Bangyou Zheng",
+    "version": "0.0.1",
+    "core-version": ">5.1.23",
+    "source": "https://tw-pubconnector.bangyou.me",
+    "list": "readme configuration license",
+    "parent-plugin": "",
+    "dependents": "",
+    "plugin-type": "plugin",
+    "packaged-by": "Gatha on 13th December 2024, 18:34:03"
+}

@@ -1,4 +1,4 @@
-# tw-literature
+# tw-pubconnector
 
 This plugin provides literature related features for [TiddlyWiki5](https://tiddlywiki.com/).
 
@@ -13,5 +13,5 @@ This plugin provides literature related features for [TiddlyWiki5](https://tiddl
 
 For learning plugin features, syntax, tutorial and examples see the plugin demo and code pages
 
-* Demo: https://tw-literature.bangyou.me
-* Code: https://github.com/byzheng/tw-literature
+* Demo: https://tw-pubconnector.bangyou.me
+* Code: https://github.com/byzheng/tw-pubconnector

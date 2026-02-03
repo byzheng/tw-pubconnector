@@ -1,0 +1,24 @@
+created: 20250530004527316
+modified: 20250530004751221
+revision: 0
+tags: 
+title: $:/plugins/bangyou/tw-pubconnector/config/article
+type: application/json
+
+{
+        "wiley.com": {
+            "articleSelector": "div#article__content"
+        },
+        "sciencedirect.com": {
+            "articleSelector": "article"
+        }, 
+        "publish.csiro.au": {
+            "articleSelector": "section.region-main-content",
+            "removeSelectors": [
+                "div.journal-body"
+            ]
+        },
+        "springer.com": {
+            "articleSelector": "main.js-main-column"
+        }
+}

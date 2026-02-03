@@ -1,0 +1,126 @@
+created: 20250614135526175
+creator: Bangyou Zheng
+modified: 20250617114059008
+modifier: Bangyou Zheng
+module-type: route
+revision: 0
+tags: 
+title: $:/plugins/bangyou/tw-pubconnector/route/authors/cache.js
+type: application/javascript
+
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/route/authors/cache.js
+type: application/javascript
+module-type: route
+
+TiddlyWiki Route: POST /^\/authors\/cache$/
+
+Manages author data cache updates by starting cache update processes and reporting progress.
+
+Request:
+  - Method: POST
+  - Path: /authors/cache
+  - Body: None required
+
+Response:
+  - 200: Returns JSON with cache update status and progress information
+  - 500: On error, returns JSON with error status and message
+
+Response Format:
+  Success (In Progress):
+  {
+    "status": "in-progress",
+    "code": 200,
+    "message": "Cache update in progress",
+    "data": { ...progress object... }
+  }
+
+  Success (Finished):
+  {
+    "status": "finished", 
+    "code": 200,
+    "message": "Cache update finished",
+    "data": { ...progress object... }
+  }
+
+  Success (Idle):
+  {
+    "status": "idle",
+    "code": 200,
+    "message": "Cache update idle", 
+    "data": { ...progress object... }
+  }
+
+  Error:
+  {
+    "status": "error",
+    "code": 500,
+    "message": "Error processing request: [error details]"
+  }
+
+Workflow:
+  1. Checks if cache update process is currently running
+  2. If not running, starts a new cache update process
+  3. Retrieves current update progress and running status
+  4. Returns status information including progress data
+
+Error Handling:
+  - Returns 500 if an exception occurs during processing
+  - Logs errors to console for debugging
+
+Dependencies:
+  - $:/plugins/bangyou/tw-pubconnector/api/authoring.js (Authoring API for cache management)
+
+@module $:/plugins/bangyou/tw-pubconnector/route/authors/cache.js
+@method POST
+@route /^\/authors\/cache$/
+@platforms ["node"]
+@param {Object} request - HTTP request object
+@param {Object} response - HTTP response object
+@param {Object} state - State object (unused in this route)
+@returns {void}
+
+\*/
+(function () {
+
+	/*jslint node: true, browser: true */
+	/*global $tw: false */
+	"use strict";
+	var authoring = require("$:/plugins/bangyou/tw-pubconnector/api/authoring.js").Authoring();
+
+	exports.method = "POST";
+	exports.platforms = ["node"];
+	exports.path = /^\/authors\/cache$/;
+
+	exports.handler = function (request, response, state) {
+
+		try {
+			if (!authoring.isUpdating()) {
+				authoring.startUpdate();
+			}
+			const progress = authoring.getUpdateProgress();
+			const running = authoring.isUpdating();
+
+			response.writeHead(200, { "Content-Type": "application/json" });
+			response.end(JSON.stringify({
+				status: running ? "in-progress" : (progress.finished ? "finished" : "idle"),
+				code: 200,
+				message: running
+					? "Cache update in progress"
+					: (progress.finished ? "Cache update finished" : "Cache update idle"),
+				data: progress
+			}));
+			return;
+		} catch (err) {
+			console.error("Error processing request:", err.message);
+			response.writeHead(500, { "Content-Type": "application/json" });
+			response.end(JSON.stringify({
+				status: "error",
+				code: 500,
+				message: "Error processing request: " + err.message
+			}));
+		}
+	};
+
+}());
+

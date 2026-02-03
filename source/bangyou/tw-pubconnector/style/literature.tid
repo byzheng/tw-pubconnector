@@ -1,0 +1,299 @@
+created: 20250520031702930
+creator: Bangyou Zheng
+modified: 20250605014850300
+modifier: Bangyou Zheng
+revision: 0
+tags: $:/tags/Stylesheet
+title: $:/plugins/bangyou/tw-pubconnector/style/literature
+type: text/css
+
+/* Modern Literature Card Styles */
+.tw-pubconnector-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tw-pubconnector-empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.tw-pubconnector-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.tw-pubconnector-empty-title {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tw-pubconnector-empty-subtitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tw-pubconnector-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tw-pubconnector-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.tw-pubconnector-status-badge {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tw-pubconnector-read-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 24px;
+  height: 24px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.tw-pubconnector-read-button:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  transform: scale(1.1);
+}
+
+.tw-pubconnector-read-button:active {
+  transform: scale(0.95);
+}
+
+.tw-pubconnector-read-button.reading {
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fcd34d;
+  cursor: not-allowed;
+}
+
+.tw-pubconnector-content {
+  padding-right: 40px;
+  padding-bottom: 20px;
+}
+
+.tw-pubconnector-title-section {
+  margin-bottom: 16px;
+}
+
+.tw-pubconnector-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tw-pubconnector-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tw-pubconnector-title-link:hover {
+  color: #3b82f6;
+}
+
+.tw-pubconnector-doi-badge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  margin-left: 8px;
+}
+
+.tw-pubconnector-authors-section {
+  margin-bottom: 16px;
+}
+
+.tw-pubconnector-authors-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tw-pubconnector-authors-label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.tw-pubconnector-author-chip {
+  color: #374151;
+  font-size: 14px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.tw-pubconnector-author-orcid {
+  margin-left: 4px;
+  color: #10b981;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.tw-pubconnector-more-authors {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.tw-pubconnector-journal-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.tw-pubconnector-journal-name {
+  font-style: italic;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.tw-pubconnector-publisher {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.tw-pubconnector-date-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tw-pubconnector-abstract-section {
+  margin-bottom: 16px;
+}
+
+.tw-pubconnector-abstract-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.tw-pubconnector-abstract-content {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tw-pubconnector-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.tw-pubconnector-footer-left {
+  display: flex;
+  gap: 16px;
+}
+
+.tw-pubconnector-footer-right {
+  margin-left: auto;
+}
+
+.tw-pubconnector-source-badge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tw-pubconnector-fallback {
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+}
+
+.tw-pubconnector-fallback-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.tw-pubconnector-fallback-title {
+  margin: 0 0 8px 0;
+  color: #374151;
+}
+
+.tw-pubconnector-fallback-subtitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tw-pubconnector-fallback-button {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+}

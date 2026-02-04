@@ -151,10 +151,12 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
                 }
                 citationData.forEach(citation => {
                         results.push({
-                            doi: citation
+                            doi: citation,
+                            platform: "Citation Watch" 
                         });
                     });
             }
+            console.log("Recent works from Citation Watch: ", results.length);
             return results;
         }
         return {

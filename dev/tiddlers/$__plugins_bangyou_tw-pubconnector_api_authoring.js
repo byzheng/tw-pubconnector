@@ -44,7 +44,8 @@ module-type: library
         require('$:/plugins/bangyou/tw-pubconnector/api/homepage.js').Homepage(),
         require('$:/plugins/bangyou/tw-pubconnector/api/orcid.js').ORCID(),
         require('$:/plugins/bangyou/tw-pubconnector/api/scholar.js').Scholar(),
-        require('$:/plugins/bangyou/tw-pubconnector/api/openalex.js').OpenAlex()
+        require('$:/plugins/bangyou/tw-pubconnector/api/openalex.js').OpenAlex(),
+        require('$:/plugins/bangyou/tw-pubconnector/api/citationwatch.js').CitationWatch()
     ];
     function Authoring() {
         let isUpdating = false;

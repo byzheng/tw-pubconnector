@@ -1,5 +1,5 @@
 created: 20251222235548982
-modified: 20260103145805599
+modified: 20260204061244575
 tags: start
 title: test/literature-latest
 type: text/vnd.tiddlywiki
@@ -8,4 +8,4 @@ type: text/vnd.tiddlywiki
 
 <span class="py-count"><$literatures-latest days=365 count/></span>
 
-<$literatures-latest days=700/>
+<$literatures-latest days=2000/>

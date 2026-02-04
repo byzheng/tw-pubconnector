@@ -155,6 +155,58 @@ Provides free access to citation data via OpenCitations REST API
             }
         }
 
+        async function getLatestCitationsByDOI(doi, days) {
+            if (!isEnabled()) {
+                throw new Error("OpenCitations API is disabled");
+            }
+            
+            doi = decodeURIComponent(doi);
+            const cleanDoi = helper.extractDOIs(doi);
+            
+            const allCitations = await getCitationByDOI(cleanDoi);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const filteredCitations = allCitations.filter(citation => {
+                const citationDate = new Date(citation.creation);
+                return citationDate >= cutoffDate;
+            });
+
+            // Extract DOI from citing field for each citation
+            const citationsWithDoi = filteredCitations.map(citation => {
+                const parsed = parseCitingField(citation.citing);
+                return parsed.doi;
+            });
+            return citationsWithDoi;
+        }
+
+        /**
+         * Parse citing field and extract all identifiers and DOI
+         * @param {string} citingField - The citing field value (e.g., "omid:br/061402001255 doi:10.1038/leu.2016.153 openalex:W2413032717 pmid:27282255")
+         * @returns {Object} - Object containing all identifiers and extracted DOI
+         */
+        function parseCitingField(citingField) {
+            if (!citingField) {
+                return { identifiers: [], doi: null };
+            }
+
+            const identifiers = citingField.split(/\s+/).filter(id => id.length > 0);
+            let doi = null;
+
+            // Extract DOI from identifiers
+            for (const identifier of identifiers) {
+                if (identifier.startsWith('doi:')) {
+                    doi = identifier.replace('doi:', '');
+                    break;
+                }
+            }
+
+            return {
+                identifiers: identifiers,
+                doi: doi
+            };
+        }
+
         function removeExpiredEntries() {
             cacheHelper.removeExpiredEntries();
         }
@@ -166,6 +218,7 @@ Provides free access to citation data via OpenCitations REST API
         return {
             isEnabled: isEnabled,
             getCitationByDOI: getCitationByDOI,
+            getLatestCitationsByDOI: getLatestCitationsByDOI,
             removeExpiredEntries: removeExpiredEntries,
             getPlatformField: getPlatformField
         };

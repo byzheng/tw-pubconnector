@@ -1,0 +1,26 @@
+bibtex-abstract: IntroductionProcess-based crop models such as the Agricultural Production Systems sIMulator Next Generation (APSIM-NG) can simulate crop growth, phenology, and yield under diverse environmental and management conditions, supporting climate-smart agriculture strategies aimed at improving productivity and resilience. However, accurate calibration and validation are required to ensure reliable predictions across cultivars and nitrogen (N) management scenarios.MethodsWe evaluated APSIM-NG performance for simulating winter wheat cultivar responses to N rate using field experiments conducted in Nebraska during the 2020/21 and 2021/22 growing seasons. Trials followed a randomized complete block design with two cultivars (LCS and WB), four N rates (0, 56, 112, and 168 kg N ha⁻¹), and three replications. Observations included phenology, grain yield, protein content, shoot biomass, carbon-to-nitrogen ratio, soil nitrate and ammonium, soil moisture, and weather variables. Model calibration targeted cultivar-specific phenology, biomass, yield, and protein content. Validation was conducted using grain yield data from 29 site-year combinations across five Nebraska counties spanning six growing seasons (2017–2022). Model accuracy was evaluated using RMSE, RRMSE, and mean bias error.ResultsCalibration improved model performance, with well to moderate accuracy for phenology (RRMSE = 2.1–2.2\%; RMSE = 3–5 days), grain yield (15–24\%), protein content (8–11\%), and grain N uptake (11–13\%). APSIM-NG moderately captured cultivar differences in leaf N uptake, with RRMSE values of 27\% for LCS and 33\% for WB. Validation results showed good performance for grain yield in both cultivars (RRMSE = 14\% for LCS and 19\% for WB). Yield response to N was simulated well for LCS (RRMSE = 18\% at the economic optimum N rate) and moderately for WB (32\%).DiscussionOverall, APSIM-NG demonstrated well to moderate performance in simulating phenology, yield, and grain N dynamics across winter wheat cultivars. These results highlight the model’s utility for evaluating N management strategies and supporting climate-smart decision-making aimed at improving nitrogen use efficiency and adaptation to climate variability in wheat systems.
+bibtex-author: Pinto, Jose G. C. P. and Balboa, Guillermo R. and Mueller, Nathan D. and Slater, Glen and Frels, Katherine and dos Santos, Caio L. and Miguez, Fernando E. and Lollato, Romulo P. and Puntel, Laila A.
+bibtex-date: 2026-01-19
+bibtex-doi: 10.3389/fagro.2025.1740421
+bibtex-entry-type: article
+bibtex-issn: 2673-3218
+bibtex-journaltitle: Frontiers in Agronomy
+bibtex-keywords: APSIM,climate-smart agronomy,crop modeling,nitrogen management,winter wheat
+bibtex-langid: english
+bibtex-options: useprefix=true
+bibtex-publisher: Frontiers
+bibtex-shortjournal: Front. Agron.
+bibtex-title: Evaluation of APSIM next generation for simulating winter wheat growth, yield response to nitrogen, and nitrogen dynamics
+bibtex-url: https://www.frontiersin.org/journals/agronomy/articles/10.3389/fagro.2025.1740421/full
+bibtex-urldate: 2026-01-29
+bibtex-volume: 7
+bibtex-year: 2026
+bibtex-zotero-key: VUPC32AK
+created: 20260129235015157
+modified: 20260129235015157
+revision: 0
+scholar-cid: 3PUDz3TEqV4J
+scholar-cites: 6821199116597720540
+tags: bibtex-entry
+title: pinto_evaluation_2026
+type: text/vnd.tiddlywiki

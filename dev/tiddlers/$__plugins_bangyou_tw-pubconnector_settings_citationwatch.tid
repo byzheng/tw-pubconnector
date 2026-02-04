@@ -48,7 +48,7 @@ Mark relevant tiddlers with the configured tag to have them monitored automatica
 
 <$select tiddler="$:/config/tw-pubconnector/citationwatch/scope" default="both">
   <option value="paper">Papers only</option>
-  <option value="person">People only</option>
-  <option value="both">Papers and people</option>
+  <option value="colleague">Colleagues only</option>
+  <option value="both">Papers and colleagues</option>
 </$select>
 

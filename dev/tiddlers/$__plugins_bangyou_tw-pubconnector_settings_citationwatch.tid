@@ -1,0 +1,54 @@
+caption: Citation Watch
+created: 20260204033330245
+modified: 20260204034447836
+tags: $:/tags/ControlPanel/Settings/tw-pubconnector
+title: $:/plugins/bangyou/tw-pubconnector/settings/citationwatch
+type: text/vnd.tiddlywiki
+
+!! Citation Watch
+
+This feature tracks publications and authors of interest.
+
+* '''Enable Citation Watch''': Turn the feature on or off.
+* '''Tag Name''': The tag you apply to key papers or colleagues to include them in tracking.
+* '''Scope''': Choose whether to watch papers, people, or both.
+
+Mark relevant tiddlers with the configured tag to have them monitored automatically.
+
+
+<div class="tc-config-option">
+<$checkbox
+  tiddler="$:/config/tw-pubconnector/citationwatch/enable"
+  field="text"
+  checked="enable"
+  unchecked="disable"
+  default="disable">
+  <$link to="$:/config/tw-pubconnector/citationwatch/enable">
+    Enable Citation Watch
+  </$link>
+</$checkbox>
+</div>
+
+  <$link to="$:/config/tw-pubconnector/citationwatch/tag">
+    Tag for Citation Watch
+  </$link>
+
+
+<$edit-text
+  tiddler="$:/config/tw-pubconnector/citationwatch/tag"
+  field="text"
+   tag="input" 
+  default="Citation Watch"
+  placeholder="Citation Watch" />
+
+
+  <$link to="$:/config/tw-pubconnector/citationwatch/scope">
+    Scope for Citation Watch
+  </$link>
+
+<$select tiddler="$:/config/tw-pubconnector/citationwatch/scope" default="both">
+  <option value="paper">Papers only</option>
+  <option value="person">People only</option>
+  <option value="both">Papers and people</option>
+</$select>
+

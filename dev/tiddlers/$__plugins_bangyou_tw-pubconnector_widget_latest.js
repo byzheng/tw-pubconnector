@@ -45,6 +45,31 @@ Reference widget for TiddlyWiki
         
         var days = this.getAttribute("days") || 90;
         const count = this.getAttribute("count") || false;
+
+        
+        if (!count) {
+            fetch('/authoring/status')
+            .then(res => res.json())
+            .then(status => {
+                console.log("Authoring status:", status);
+                
+                if (!status.hasPendingRequests) {
+                    return;
+                }
+                var span = document.createElement("span");
+                span.textContent = "Data retrieval in progress. Refresh the page after a while to see the latest literatures.";
+                span.style.fontStyle = "italic";
+                span.style.color = "#888";
+                containerDom.appendChild(span);
+                return;    
+            })
+            .catch(err => {
+                console.error("Error checking authoring status:", err);
+                // Optionally show an error message in the widget
+                // containerDom.innerHTML = "Error checking data status: " + err.message;
+            });  
+        }      
+
         fetch(`/literatures/latest?days=${days}`)
             .then(response => {
                 if (!response.ok) {
@@ -71,7 +96,6 @@ Reference widget for TiddlyWiki
                     containerDom.innerHTML = "Exception fetching latest literatures: " + err.message;
                 }
             });
-
     };
 
     ReferencesWidget.prototype.refresh = function (changedTiddlers) {

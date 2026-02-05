@@ -22,6 +22,8 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
     const platform_field = "openalex"; // Field in tiddler that contains the ORCID ID
     const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('openalex', 9999999);
 
+    // Track background fetches at module level (shared across all instances)
+    var backgroundFetches = {}; // { key: true }
 
     function OpenAlex(host = "https://api.openalex.org/") {
         const this_host = host.replace(/\/+$/, "");
@@ -273,33 +275,49 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
                 return results;
             }
             
-            const workData = await getWorksByDOI(doi);
-            if (!workData) {
-                console.warn(`No work data found for DOI: ${doi}`);
-                return results;
-            }
+            // Cache miss - start background refresh (non-blocking)
+            // Don't await - this allows immediate return while data loads in background
+            fetchCitingWorksInBackground(doi, days, key);
             
-            const openalexId = extractOpenAlexId(workData.id);
-            if (!openalexId) {
-                console.warn(`No OpenAlex ID found for DOI: ${doi}`);
-                return results;
-            }
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - days);
-            const cutoffDateString = cutoffDate.toISOString().split('T')[0];
-            console.log(`Fetching citing works for DOI: ${doi} (OpenAlex ID: ${openalexId}) published after ${cutoffDateString}...`);
+            // Return empty results for now - next request will get cached data
+            console.log(`Citing works for DOI ${doi} not in cache. Fetching in background...`);
+            return results;
+        }
+
+        // Background function to fetch and cache citing works without blocking
+        async function fetchCitingWorksInBackground(doi, days, cacheKey) {
+            var fetchKey = cacheKey;
+            backgroundFetches[fetchKey] = true;
+            console.log(`Background:`, backgroundFetches);
             try {
+                const workData = await getWorksByDOI(doi);
+                if (!workData) {
+                    console.warn(`No work data found for DOI: ${doi}`);
+                    return;
+                }
+                
+                const openalexId = extractOpenAlexId(workData.id);
+                if (!openalexId) {
+                    console.warn(`No OpenAlex ID found for DOI: ${doi}`);
+                    return;
+                }
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                const cutoffDateString = cutoffDate.toISOString().split('T')[0];
+                console.log(`Background: Fetching citing works for DOI: ${doi} (OpenAlex ID: ${openalexId}) published after ${cutoffDateString}...`);
+                
                 const citingWorks = await getAllPaginatedResults('/works', {
                     filter: `cites:${openalexId},from_publication_date:${cutoffDateString}`
                 });
-                for (const result of citingWorks) {
-                    results.push(simplifyWorkData(result, null));
-                }
-                cacheHelper.addEntry(key, citingWorks);
-                return citingWorks;
+                
+                // Cache the results
+                cacheHelper.addEntry(cacheKey, citingWorks);
+                console.log(`Background: Cached ${citingWorks.length} citing works for DOI ${doi}`);
             } catch (error) {
-                console.error(`Error fetching citing works: ${error.message}`);
-                return results;
+                console.error(`Background: Error fetching citing works for DOI ${doi}: ${error.message}`);
+            } finally {
+                delete backgroundFetches[fetchKey];
+                console.log(`Background fetch completed. Remaining pending:`, Object.keys(backgroundFetches));
             }
         }
         
@@ -427,6 +445,17 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
         function removeExpiredEntries() {
             cacheHelper.removeExpiredEntries();
         }
+
+        function hasPendingRequests() {
+            console.log("Checking pending background fetches:", backgroundFetches);
+            for (const key in backgroundFetches) {
+                if (backgroundFetches[key] === true) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         return {
             isEnabled: isEnabled,
             cacheWorks: cacheWorks,
@@ -438,6 +467,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             getPlatformField: function () {
                 return platform_field;
             },
+            hasPendingRequests: hasPendingRequests
         };
     }
 

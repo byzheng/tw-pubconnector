@@ -265,7 +265,15 @@ module-type: library
             return uniqueItems;
         }
 
-
+        function hasPendingRequests() {
+            // Check if any platform has pending background requests
+            for (const platform of platforms) {
+                if (typeof platform.hasPendingRequests === "function" && platform.hasPendingRequests()) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         return {
             getAuthorByTiddler: getAuthorByTiddler,
@@ -273,7 +281,8 @@ module-type: library
             getLatest: getLatest,
             isUpdating: () => isUpdating,
             getUpdateProgress: () => updateProgress,
-            startUpdate: startUpdate
+            startUpdate: startUpdate,
+            hasPendingRequests: hasPendingRequests
         };
 
     }

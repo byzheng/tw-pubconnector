@@ -257,18 +257,17 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             const url = buildOpenAlexApiUrl(`/works/${encodeURIComponent(doi)}`);
             const result = await openalexRequest(url);
             // Update cache with timestamp
-            cacheHelper.addEntry(key, result, undefined, false);
+            cacheHelper.addEntry(key, result);
             return result;
         }
 
         async function getCitesByDOI(doi, days = 90) {
             const results = [];
             const key = "citation_" + doi;
-            
             // Check cache first
             const cached = cacheHelper.getCacheByKey(key);
             if (cached) {
-            for (const result of cached.item) {
+                for (const result of cached.item) {
                     results.push(simplifyWorkData(result, null));
                 }
                 return results;
@@ -296,7 +295,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
                 for (const result of citingWorks) {
                     results.push(simplifyWorkData(result, null));
                 }
-                cacheHelper.addEntry(key, citingWorks, undefined, false);
+                cacheHelper.addEntry(key, citingWorks);
                 return citingWorks;
             } catch (error) {
                 console.error(`Error fetching citing works: ${error.message}`);

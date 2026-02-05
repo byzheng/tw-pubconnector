@@ -16,11 +16,11 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
     const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('citationwatch', 9999999);
     const helper = require('$:/plugins/bangyou/tw-pubconnector/utils/helper.js').Helper();
     const opencitations = require('$:/plugins/bangyou/tw-pubconnector/api/opencitations.js').OpenCitations();
-    
+    const openalex = require('$:/plugins/bangyou/tw-pubconnector/api/openalex.js').OpenAlex();
     const options = {
         fromDate : null,
         rows : 20,
-        platform : "opencitations"
+        platform : "openalex"
     };
     /**
      * Citation Watch API
@@ -133,7 +133,9 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
             }
             // OpenCitations: Free, no API key required, provides direct citation data
             if (options.platform === "opencitations") {
-                return await opencitations.getLatestCitationsByDOI(doi, days);
+                // return await opencitations.getLatestCitationsByDOI(doi, days);
+            } else if (options.platform === "openalex") {
+                return await openalex.getCitesByDOI(doi, days);
             }
             throw new Error(`Platform "${options.platform}" is not yet supported for citation watching`);
         }
@@ -152,10 +154,8 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
                     continue;
                 }
                 citationData.forEach(citation => {
-                        results.push({
-                            doi: citation,
-                            platform: "Citation Watch" 
-                        });
+                    citation.platform = "Citation Watch";
+                    results.push(citation);
                     });
             }
             console.log("Recent works from Citation Watch: ", results.length);

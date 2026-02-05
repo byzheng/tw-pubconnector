@@ -263,16 +263,16 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
 
         async function getCitesByDOI(doi, days = 90) {
             const results = [];
-            // const key = "citation_" + doi;
+            const key = "citation_" + doi;
             
             // Check cache first
-            // const cached = cacheHelper.getCacheByKey(key);
-            // if (cached) {
-            // for (const result of cached.item) {
-            //         results.push(simplifyWorkData(result, null));
-            //     }
-            //     return results;
-            // }
+            const cached = cacheHelper.getCacheByKey(key);
+            if (cached) {
+            for (const result of cached.item) {
+                    results.push(simplifyWorkData(result, null));
+                }
+                return results;
+            }
             
             const workData = await getWorksByDOI(doi);
             if (!workData) {

@@ -18,18 +18,20 @@ Get reference list for a tiddler
 	var openalex = require("$:/plugins/bangyou/tw-pubconnector/api/openalex.js").OpenAlex();
 	exports.method = "GET";
 	exports.platforms = ["node"];
-	exports.path = /^\/literature\/([^/]+)\/cites$/;
+	exports.path = /^\/literature\/(.+)\/cites$/;
 
 	exports.handler = function (request, response, state) {
 
 		try {
 			const doi = state.params[0];
-			openalex.cites(doi).then((data) => {
+			console.log("Fetching references for DOI:", doi);	
+			openalex.getCitesByDOI(doi).then((data) => {
 				response.writeHead(200, { "Content-Type": "application/json" });
 				response.end(JSON.stringify({
 					"status": "success",
 					"code": 200,
 					"message": "References fetched successfully",
+					"count": data.length,
 					"data": data
 				}));
 			}).catch((err) => {

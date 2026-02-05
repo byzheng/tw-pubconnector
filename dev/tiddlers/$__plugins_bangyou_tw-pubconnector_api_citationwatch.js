@@ -60,7 +60,9 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
 
         function getWatchedPapersColleagues() {
             const tiddlersPapers = getWatchedPapers();
+            console.log("Citation Watch: Watched papers:", tiddlersPapers.length);
             const tiddlersColleague = getWatchedColleagues();
+            console.log("Citation Watch: Watched colleagues:", tiddlersColleague.length);
             const allTiddlers = [...new Set([...tiddlersPapers.flat(), ...tiddlersColleague.flat()])];
             return allTiddlers.map(title => {
                 const tiddler = $tw.wiki.getTiddler(title);

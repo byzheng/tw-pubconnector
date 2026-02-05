@@ -130,6 +130,51 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             return allResults;
         }
 
+        function extractOpenAlexId(url) {
+            if (typeof url !== "string") return null;
+            url = url.toLowerCase();
+            // Handle filter URL format: openalex.org/works?filter=authorships.author.id:
+            if (url.includes('openalex.org/works?filter=authorships.author.id:')) {
+                const match = url.match(/authorships\.author\.id:(a\d+)/i);
+                return match ? match[1] : null;
+            }
+            
+            // Handle direct OpenAlex URLs with author IDs (A) or work IDs (W)
+            const match = url.match(/openalex\.org\/([aw]\d+)/i);
+            return match ? match[1] : null;
+        }
+
+        function buildOpenAlexApiUrl(path, query = {}) {
+            const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+            const queryString = Object.keys(query)
+                .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key]))
+                .join('&');
+            return `${this_host}${normalizedPath}${queryString ? `?${queryString}` : ""}`;
+        }
+
+        async function openalexRequest(url) {
+            const currentCount = getDailyRequestCount();
+            const openalex_daily_limit = getOpenAlexDailyLimit();
+            if (currentCount >= openalex_daily_limit) {
+                throw new Error(`Daily request limit of ${openalex_daily_limit} for OpenAlex API has been reached.`);
+            }
+            const headers = {
+                "Accept": "application/json"
+            };
+            console.log(`Making OpenAlex API request to: ${url}`);
+            const response = await fetch(url, { headers });
+            const today = new Date().toISOString().slice(0, 10);
+            const countObj = { count: currentCount + 1, day: today };
+            //console.log(`OpenAlex API request count for today (${today}): ${countObj.count}`);
+            cacheHelper.addEntry(openalex_daily_request_count_key, countObj, undefined, false);
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        }
+
+        
         async function getAuthorWorks(openalexId) {
             console.log(`Starting to retrieve works for OpenAlex ID: ${openalexId}`);
             
@@ -179,162 +224,9 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
         }
 
 
-        function extractOpenAlexId(url) {
-            if (typeof url !== "string") return null;
-            url = url.toLowerCase();
-            // Handle filter URL format: openalex.org/works?filter=authorships.author.id:
-            if (url.includes('openalex.org/works?filter=authorships.author.id:')) {
-                const match = url.match(/authorships\.author\.id:(a\d+)/i);
-                return match ? match[1] : null;
-            }
-            
-            // Handle direct OpenAlex URLs with author IDs (A) or work IDs (W)
-            const match = url.match(/openalex\.org\/([aw]\d+)/i);
-            return match ? match[1] : null;
-        }
-
-        function buildOpenAlexApiUrl(path, query = {}) {
-            const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-            const queryString = Object.keys(query)
-                .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key]))
-                .join('&');
-            return `${this_host}${normalizedPath}${queryString ? `?${queryString}` : ""}`;
-        }
-
-        async function openalexRequest(url) {
-            const currentCount = getDailyRequestCount();
-            const openalex_daily_limit = getOpenAlexDailyLimit();
-            if (currentCount >= openalex_daily_limit) {
-                throw new Error(`Daily request limit of ${openalex_daily_limit} for OpenAlex API has been reached.`);
-            }
-            const headers = {
-                "Accept": "application/json"
-            };
-            const response = await fetch(url, { headers });
-            const today = new Date().toISOString().slice(0, 10);
-            const countObj = { count: currentCount + 1, day: today };
-            //console.log(`OpenAlex API request count for today (${today}): ${countObj.count}`);
-            cacheHelper.addEntry(openalex_daily_request_count_key, countObj, undefined, false);
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        }
-        function getFromCache(openalexId, doi) {
-            return cacheHelper.getCacheByKey([openalexId, doi]);
-        }
-
-        async function works_doi(doi) {
-            doi = decodeURIComponent(doi);
-            if (!/^https:\/\/doi\.org\//.test(doi)) {
-                doi = `https://doi.org/${doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '')}`;
-            }
-            const cacheResult = getFromCache(null, doi);
-            if (cacheResult) {
-                return cacheResult;
-            }
-
-            const url = buildOpenAlexApiUrl(`/works/${encodeURIComponent(doi)}`);
-            const result = await openalexRequest(url);
-            const openalexId = result.id;
-            // Update cache with timestamp
-            cacheHelper.addEntry([openalexId, result.doi], result);
-            return result;
-        }
-
-        async function cites(doi) {
-            var results = [];
-            const workData = await works_doi(doi);
-            if (!workData) {
-                console.warn(`No work data found for DOI: ${doi}`);
-                return results;
-            }
-            const openalexId = extractOpenAlexId(workData.id);
-            if (!openalexId) {
-                console.warn(`No OpenAlex ID found for DOI: ${doi}`);
-                return results;
-            }
-            const url = `https://api.openalex.org/works?filter=cites:${encodeURIComponent(openalexId)}`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    console.warn(`Failed to fetch citing works: ${response.status} ${response.statusText}`);
-                    return results;
-                }
-                const data = await response.json();
-
-                for (const result of data.results || []) {
-                    const openalexId = result.id;
-                    cacheHelper.addEntry([openalexId, result.doi], result, undefined, false);
-                }
-                if (data.results) {
-                    results = data.results;
-                }
-            } catch (error) {
-                console.error(`Error fetching citing works: ${error.message}`);
-            }
-            return results;
-
-        }
-        async function references(doi) {
-            const results = [];
-            const workData = await works_doi(doi);
-
-            const ids = (workData.referenced_works || []);
-            if (ids.length === 0) {
-                console.warn(`No references found for DOI: ${doi}`);
-                return results;
-            }
-            const uncachedIds = [];
-            for (const id of ids) {
-                const resultCache = getFromCache(id, null);
-                if (resultCache) {
-                    results.push(resultCache);
-                } else {
-                    uncachedIds.push(id);
-                }
-            }
-            if (uncachedIds.length === 0) {
-                return results;
-            }
-            // Helper function to divide the array into chunks of specified size
-            const chunkArray = (array, size) => {
-                const chunks = [];
-                for (let i = 0; i < array.length; i += size) {
-                    chunks.push(array.slice(i, i + size));
-                }
-                return chunks;
-            };
-            // Divide the IDs into batches
-            const batches = chunkArray(uncachedIds, BATCH_SIZE);
-            for (const batch of batches) {
-                // Construct the filter parameter with pipe-separated IDs
-                const filterParam = batch.join('|');
-                const url = `https://api.openalex.org/works?filter=openalex:${encodeURIComponent(filterParam)}`;
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        console.warn(`Failed to fetch batch: ${response.status} ${response.statusText}`);
-                        continue;
-                    }
-
-                    const data = await response.json();
-                    for (const result of data.results || []) {
-                        const openalexId = result.id;
-                        cacheHelper.addEntry([openalexId, result.doi], result, undefined, false);
-                    }
-                    if (data.results) {
-                        results.push(...data.results);
-                    }
-                } catch (error) {
-                    console.error(`Error fetching batch: ${error.message}`);
-                }
-            }
-
-            return results;
-        }
-
+        // Get an author works by its OpenAlex ID 
+        // Note: This function retrieves works from cache only and does not make API calls. Use cacheWorks() to fetch and cache works if not already cached.
+        // params: Author openalexId (can be in various formats, e.g., "A12345", "https://openalex.org/A12345", or filter URL containing the ID)
         function getWorks(openalexId) {
             if (!isEnabled()) {
                 return [];
@@ -350,6 +242,68 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             return cached?.item || [];
         }
 
+        // Get metadata for a given DOI
+        async function getWorksByDOI(doi) {
+            doi = decodeURIComponent(doi);
+            if (!/^https:\/\/doi\.org\//.test(doi)) {
+                doi = `https://doi.org/${doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '')}`;
+            }
+            const key = "meta_" + doi;
+            const cacheResult = cacheHelper.getCacheByKey(key);
+            if (cacheResult) {
+                return cacheResult.item;
+            }
+
+            const url = buildOpenAlexApiUrl(`/works/${encodeURIComponent(doi)}`);
+            const result = await openalexRequest(url);
+            // Update cache with timestamp
+            cacheHelper.addEntry(key, result, undefined, false);
+            return result;
+        }
+
+        async function getCitesByDOI(doi, days = 90) {
+            const results = [];
+            // const key = "citation_" + doi;
+            
+            // Check cache first
+            // const cached = cacheHelper.getCacheByKey(key);
+            // if (cached) {
+            // for (const result of cached.item) {
+            //         results.push(simplifyWorkData(result, null));
+            //     }
+            //     return results;
+            // }
+            
+            const workData = await getWorksByDOI(doi);
+            if (!workData) {
+                console.warn(`No work data found for DOI: ${doi}`);
+                return results;
+            }
+            
+            const openalexId = extractOpenAlexId(workData.id);
+            if (!openalexId) {
+                console.warn(`No OpenAlex ID found for DOI: ${doi}`);
+                return results;
+            }
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            const cutoffDateString = cutoffDate.toISOString().split('T')[0];
+            console.log(`Fetching citing works for DOI: ${doi} (OpenAlex ID: ${openalexId}) published after ${cutoffDateString}...`);
+            try {
+                const citingWorks = await getAllPaginatedResults('/works', {
+                    filter: `cites:${openalexId},from_publication_date:${cutoffDateString}`
+                });
+                for (const result of citingWorks) {
+                    results.push(simplifyWorkData(result, null));
+                }
+                cacheHelper.addEntry(key, citingWorks, undefined, false);
+                return citingWorks;
+            } catch (error) {
+                console.error(`Error fetching citing works: ${error.message}`);
+                return results;
+            }
+        }
+        
         
         // Get latest works within the past 'days' days
         function getLatest(days = 90) {
@@ -386,40 +340,47 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
                     if (workDate < cutoffDate) {
                         continue;
                     }
-                    
-                    if (!work.doi || work.doi === "") {
-                        continue;
-                    }
-                    const doi = work.doi;
-
-                    // Extract and format authors
-                    const authors = [];
-                    if (work.authorships && Array.isArray(work.authorships)) {
-                        work.authorships.forEach(author => {
-                            authors.push({
-                                given: author.author['display_name']|| "",
-                                family: " ",
-                                openalexId: extractOpenAlexId(author.author['id']) || undefined,
-                                ORCID: author.author['orcid'] || undefined
-                            });
-                        });
-                    }
-                    recentWorks.push({
-                        colleagueId: colleagueId,
-                        // work: work,
-                        doi: doi,
-                        title: work.title ? work.title : "",
-                        publicationDate: workDate,
-                        platform: "OpenAlex",
-                        author: authors.length > 0 ? authors : undefined,
-                        'container-title': work.primary_location.source && work.primary_location.source && work.primary_location.source.display_name ? [work.primary_location.source.display_name] : undefined,
-                        'reference-count': undefined,
-                        'is-referenced-by-count': undefined
-                    });
+            
+                    recentWorks.push(simplifyWorkData(work, colleagueId));
                 }
             }
 
             return recentWorks;
+        }
+        function simplifyWorkData(work, colleagueId) {
+            if (!work || !work['publication_date']) {
+                return null;
+            }
+            const pubDate = work['publication_date'];
+            // Parse month and year from strings (e.g., "AUG 25" and "2025")
+            const workDate = new Date(pubDate);
+            if (!work.doi || work.doi === "") {
+                return null;
+            }
+            // Extract and format authors
+            const authors = [];
+            if (work.authorships && Array.isArray(work.authorships)) {
+                work.authorships.forEach(author => {
+                    authors.push({
+                        given: author.author['display_name']|| "",
+                        family: " ",
+                        openalexId: extractOpenAlexId(author.author['id']) || undefined,
+                        ORCID: author.author['orcid'] || undefined
+                    });
+                });
+            }
+            return {
+                colleagueId: colleagueId,
+                // work: work,
+                doi: work.doi,
+                title: work.title ? work.title : "",
+                publicationDate: workDate,
+                platform: "OpenAlex",
+                author: authors.length > 0 ? authors : undefined,
+                'container-title': work.primary_location.source && work.primary_location.source && work.primary_location.source.display_name ? [work.primary_location.source.display_name] : undefined,
+                'reference-count': undefined,
+                'is-referenced-by-count': undefined
+            };
         }
 
         function getAuthorByDOI(doi) {
@@ -474,8 +435,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             getLatest: getLatest,
             getAuthorByDOI: getAuthorByDOI,
             removeExpiredEntries: removeExpiredEntries,
-            references: references,
-            cites: cites,
+            getCitesByDOI: getCitesByDOI,
             getPlatformField: function () {
                 return platform_field;
             },

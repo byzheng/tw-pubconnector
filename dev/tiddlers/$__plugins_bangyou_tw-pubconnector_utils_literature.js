@@ -323,7 +323,8 @@ function Literature() {
                         platform === "Web of Science" || 
                         platform === "Scopus" ||
                         platform === "OpenAlex" ||
-                        platform === "Google Scholar"
+                        platform === "Google Scholar" ||
+                        platform === "Citation Watch"
                     );
                     
                     // Check if data is already cached

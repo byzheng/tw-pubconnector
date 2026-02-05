@@ -112,13 +112,15 @@ Caching utility for TiddlyWiki with timestamped caching
                 saveCache();
             }
         }
-        function removeExpiredEntries() {
+        function removeExpiredEntries(maxItems) {
             //if (Object.keys(cache).length < this_limit) return;
             const now = Date.now();
             // Remove entries older than the expiration threshold
             const expirationThreshold = now - getExpredDays() * 24 * 60 * 60 * 1000; // Convert days to milliseconds
-
-            const deleteItemMaximum = getDeleteMaximum();
+            var deleteItemMaximum = maxItems;
+            if (maxItems === undefined) {
+                deleteItemMaximum = getDeleteMaximum();
+            }
             // Limit cache size to this_limit
             const cacheKeys = Object.keys(cache);
             // If not enough expired entries, delete oldest items up to deleteMaximum

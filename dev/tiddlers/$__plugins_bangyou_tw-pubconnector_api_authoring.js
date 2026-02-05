@@ -72,7 +72,9 @@ module-type: library
                     if (typeof platform.clearAllPending === "function") {
                         platform.clearAllPending();
                     }
-                    await platform.removeExpiredEntries();
+                    if (typeof platform.removeExpiredEntries === "function") {
+                        await platform.removeExpiredEntries();
+                    }
                 } catch (error) {
                     console.error(`Error clearing cache for ${platform.constructor.name}:`, error);
                 }
@@ -83,6 +85,7 @@ module-type: library
                 if (!(tiddler && tiddler.fields)) continue;
 
                 for (const platform of platforms) {
+                    if (!platform.getPlatformField) continue;
                     const platformField = platform.getPlatformField();
                     if (!platformField || !tiddler.fields[platformField]) continue;
 
@@ -235,7 +238,8 @@ module-type: library
                     continue;
                 }
                 
-                const cleanDoi = item.doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
+                const cleanDoi = helper.extractDOIs(item.doi)[0];
+                console.log(`Processing item with DOI: ${cleanDoi} from platform: ${item.platform}`);
                 
                 if (doiMap.has(cleanDoi)) {
                     // DOI exists, merge platform info

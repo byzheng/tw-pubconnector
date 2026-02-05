@@ -337,6 +337,16 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
                 if (colleagueId === openalex_daily_request_count_key) {
                     continue;
                 }
+
+                // Skip citation cache entries (e.g., "citation_doi...")
+                if (colleagueId.startsWith("citation_")) {
+                    continue;
+                }
+                
+                // Skip metadata cache entries (e.g., "meta_doi...")
+                if (colleagueId.startsWith("meta_")) {
+                    continue;
+                }
                 
                 if (!Object.prototype.hasOwnProperty.call(works, colleagueId)) {
                     continue;
@@ -443,7 +453,8 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
         }
 
         function removeExpiredEntries() {
-            cacheHelper.removeExpiredEntries();
+            const maxItems = Math.ceil(cacheHelper.getCaches().length / 10);
+            cacheHelper.removeExpiredEntries(maxItems);
         }
 
         function hasPendingRequests() {

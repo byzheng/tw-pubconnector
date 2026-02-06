@@ -49,7 +49,13 @@ Reference widget for TiddlyWiki
         
         if (!count) {
             fetch('/authoring/status')
-            .then(res => res.json())
+            .then(response => {
+                if (!response.ok) {
+                    console.error("Error fetching authoring status:", response.statusText);
+                    return Promise.reject(); // stop further processing
+                }
+                return response.json(); // parse the response body
+            })
             .then(status => {
                 console.log("Authoring status:", status);
                 

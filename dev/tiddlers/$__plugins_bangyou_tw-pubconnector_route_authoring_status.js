@@ -1,5 +1,5 @@
 /*\
-title: $__plugins_bangyou_tw-pubconnector_route_authoring_status.js
+title: $:/plugins/bangyou/tw-pubconnector/authoring/status.js
 type: application/javascript
 module-type: route
 \*/

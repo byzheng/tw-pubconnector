@@ -31,6 +31,7 @@ module-type: library
     }
 
     const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('reading', 9999999);
+    const helper = require('$:/plugins/bangyou/tw-pubconnector/utils/helper.js').Helper();
 
     function Reading() {
 
@@ -41,12 +42,15 @@ module-type: library
             
             try {
                 // Clean the DOI
-                const cleanDoi = doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
+                const cleanDoi = helper.extractDOIs(doi)[0];
                 
                 // Get current read DOIs
                 const readDOIs = getReadDOIs();
-                // Add new DOI if not already present
-                if (!readDOIs.includes(cleanDoi)) {
+                // Add new DOI if not already present (case-insensitive comparison)
+                const doiLowercase = cleanDoi.toLowerCase();
+                const isDuplicate = readDOIs.some(existingDoi => existingDoi.toLowerCase() === doiLowercase);
+                
+                if (!isDuplicate) {
                     readDOIs.push(cleanDoi);
                     
                     // Save back to cache with timestamp
@@ -54,6 +58,7 @@ module-type: library
                         dois: readDOIs,
                         lastUpdated: new Date().toISOString()
                     };
+                    console.log(`Marking DOI as read: ${cleanDoi}`);
                     cacheHelper.addEntry('read-literature', readData);
                 }
                 
@@ -68,7 +73,7 @@ module-type: library
             try {
                 const cacheData = cacheHelper.getCacheByKey('read-literature');
                 if (cacheData && cacheData.item && cacheData.item.dois && Array.isArray(cacheData.item.dois)) {
-                    return cacheData.item.dois;
+                    return cacheData.item.dois.map(doi => doi.toLowerCase());
                 }
                 return [];
             } catch (error) {

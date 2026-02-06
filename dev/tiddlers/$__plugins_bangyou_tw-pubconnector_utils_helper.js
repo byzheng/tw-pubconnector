@@ -17,6 +17,7 @@ Helper functions
 
     function Helper() {
         function extractDOIs(text) {
+            text = text.toLowerCase();
             const doiPattern = /10\.\d{4,9}\/[-._;()/:A-Z0-9]+/gi;
             const matches = text.match(doiPattern) || [];
             // Remove trailing .pdf if present

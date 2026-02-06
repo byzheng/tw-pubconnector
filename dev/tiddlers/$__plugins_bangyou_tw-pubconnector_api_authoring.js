@@ -205,7 +205,7 @@ module-type: library
             const existingDOIs = $tw.wiki.filterTiddlers(filter);
             // Clean and merge existing DOIs with read DOIs
             const cleanExistingDOIs = existingDOIs.map(doi => 
-                doi.replace('https://doi.org/', '').replace('http://doi.org/', '')
+                helper.extractDOIs(doi)[0]
             );
             const allReadDOIs = [...new Set([...readDOIs, ...cleanExistingDOIs])];
             // Iterate through all platforms and collect recent items
@@ -219,7 +219,7 @@ module-type: library
                         // Filter out items that have been marked as read
                         const unreadItems = items.filter(item => {
                             if (!item.doi) return true; // Keep items without DOI
-                            const cleanDoi = item.doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
+                            const cleanDoi = helper.extractDOIs(item.doi)[0];
                             return !allReadDOIs.includes(cleanDoi);
                         });
                         allItems = allItems.concat(unreadItems);
@@ -239,8 +239,6 @@ module-type: library
                 }
                 
                 const cleanDoi = helper.extractDOIs(item.doi)[0];
-                console.log(`Processing item with DOI: ${cleanDoi} from platform: ${item.platform}`);
-                
                 if (doiMap.has(cleanDoi)) {
                     // DOI exists, merge platform info
                     const existing = doiMap.get(cleanDoi);

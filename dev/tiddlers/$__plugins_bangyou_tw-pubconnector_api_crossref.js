@@ -145,7 +145,8 @@ Crossref API utility for TiddlyWiki
         }
 
         function removeExpiredEntries() {
-            cacheHelper.removeExpiredEntries();
+            // For Crossref, we can set a no timeout  since DOIs and their metadata don't change frequently
+            //cacheHelper.removeExpiredEntries();
         }
 
         function getPlatformField() {

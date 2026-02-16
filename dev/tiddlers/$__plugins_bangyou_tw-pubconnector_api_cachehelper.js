@@ -51,18 +51,21 @@ DEFAULT CONFIGURATION STRUCTURE:
       metadata: { ttl: 180d, maxItems: 10000 }
     },
     openalex: {
+            'daily-quota': { ttl: 2d, maxItems: 100 },
       'author-profile': { ttl: 60d, maxItems: 5000 },
       metadata: { ttl: 180d, maxItems: 10000 },
       'cited-recent': { ttl: 7d, maxItems: 5000 },
       'cited-historical': { ttl: 180d, maxItems: 10000 }
     },
     scopus: {
+            'daily-quota': { ttl: 2d, maxItems: 100 },
       'author-profile': { ttl: 60d, maxItems: 5000 },
       metadata: { ttl: 180d, maxItems: 10000 },
       'cited-recent': { ttl: 7d, maxItems: 5000 },
       'cited-historical': { ttl: 180d, maxItems: 10000 }
     },
     wos: {
+            'daily-quota': { ttl: 2d, maxItems: 100 },
       'author-profile': { ttl: 60d, maxItems: 5000 },
       metadata: { ttl: 180d, maxItems: 10000 },
       'cited-recent': { ttl: 7d, maxItems: 5000 },
@@ -72,6 +75,10 @@ DEFAULT CONFIGURATION STRUCTURE:
       'author-profile': { ttl: 60d, maxItems: 5000 },
       'author-works': { ttl: 7d, maxItems: 2000 },
       metadata: { ttl: 180d, maxItems: 10000 }
+        },
+        orcid: {
+            'daily-quota': { ttl: 2d, maxItems: 100 },
+            metadata: { ttl: 180d, maxItems: 10000 }
     }
   }
 
@@ -105,18 +112,21 @@ FEATURES:
             metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         openalex: {
+            'daily-quota': { ttl: 2 * 24 * 60 * 60 * 1000, maxItems: 100 },
             'author-profile': { ttl: 60 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 },
             'cited-recent': { ttl: 7 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             'cited-historical': { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         scopus: {
+            'daily-quota': { ttl: 2 * 24 * 60 * 60 * 1000, maxItems: 100 },
             'author-profile': { ttl: 60 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 },
             'cited-recent': { ttl: 7 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             'cited-historical': { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         wos: {
+            'daily-quota': { ttl: 2 * 24 * 60 * 60 * 1000, maxItems: 100 },
             'author-profile': { ttl: 60 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 },
             'cited-recent': { ttl: 7 * 24 * 60 * 60 * 1000, maxItems: 5000 },
@@ -126,6 +136,13 @@ FEATURES:
             'author-profile': { ttl: 60 * 24 * 60 * 60 * 1000, maxItems: 5000 },
             'author-works': { ttl: 7 * 24 * 60 * 60 * 1000, maxItems: 2000 },
             metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
+        },
+        orcid: {
+            'daily-quota': { ttl: 2 * 24 * 60 * 60 * 1000, maxItems: 100 },
+            metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
+        },
+        homepage: {
+            'author-works': { ttl: 90 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         default: { ttl: 30 * 24 * 60 * 60 * 1000, maxItems: 5000 }
     };

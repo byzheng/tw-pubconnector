@@ -51,7 +51,10 @@ ORCID utility for TiddlyWiki
             let countObj = cacheHelper.getCacheByKey(orcid_daily_request_count_key);
             if (!countObj || !countObj.item || countObj.item.day !== today) {
                 countObj = { count: 0, day: today };
-                cacheHelper.addEntry(orcid_daily_request_count_key, countObj, undefined, false);
+                cacheHelper.addEntry(orcid_daily_request_count_key, countObj, {
+                    dataType: 'orcid.daily-quota',
+                    forceSave: false
+                });
                 return 0;
             }
             return typeof countObj.item.count === "number" ? countObj.item.count : 0;
@@ -69,7 +72,10 @@ ORCID utility for TiddlyWiki
             const today = new Date().toISOString().slice(0, 10);
             const countObj = { count: currentCount + 1, day: today };
             console.log(`ORCID API request count for today (${today}): ${countObj.count}`);
-            cacheHelper.addEntry(orcid_daily_request_count_key, countObj, undefined, false);
+            cacheHelper.addEntry(orcid_daily_request_count_key, countObj, {
+                dataType: 'orcid.daily-quota',
+                forceSave: false
+            });
             await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

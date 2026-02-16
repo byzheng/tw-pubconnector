@@ -52,12 +52,12 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
                 try {
                     const response = await fetch(url, { signal: controller.signal });
                     if (!response || !response.ok) {
-                        await cacheHelper.addEntry(url, [], { dataType: 'homepage.metadata', metadata: { url: url } });
+                        await cacheHelper.addEntry(url, [], { dataType: 'homepage.author-works', metadata: { url: url } });
                         return;
                     }
                     const html = await response.text();
                     const dois = helper.extractDOIs(html);
-                    await cacheHelper.addEntry(url, dois, { dataType: 'homepage.metadata', metadata: { url: url } });
+                    await cacheHelper.addEntry(url, dois, { dataType: 'homepage.author-works', metadata: { url: url } });
                     return dois;
                 } finally {
                     clearTimeout(timeoutId);
@@ -69,7 +69,7 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
                     console.error('Error processing request:', err && err.message ? err.message : err);
                 }
                 try {
-                    await cacheHelper.addEntry(url, [], { dataType: 'homepage.metadata', metadata: { url: url } });
+                    await cacheHelper.addEntry(url, [], { dataType: 'homepage.author-works', metadata: { url: url } });
                 } catch (cacheErr) {
                     console.error('Failed to write empty cache entry for', url, cacheErr);
                 }

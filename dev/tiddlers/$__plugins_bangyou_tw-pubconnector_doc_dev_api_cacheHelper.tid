@@ -18,19 +18,21 @@ The `cacheHelper` module provides intelligent caching with:
 !!! Data Types
 
 Data is organized into types like:
+- `openalex.daily-quota` - 2-day TTL (daily API quota counters)
 - `openalex.author-profile` - 60-day TTL (author profiles change slowly)
 - `openalex.author-works` - 7-day TTL (works list can have new items)
 - `scholar.metadata` - 180-day TTL (stable reference data)
-- `homepage.metadata` - 180-day TTL (homepage content rarely changes)
+- `homepage.author-works` - 90-day TTL (DOIs extracted from author homepages)
 
 Each dataType has independent TTL and size limits.
 
 !!! TTL (Time To Live)
 
 After TTL expires, entry is automatically deleted on next cleanup:
+- ''2 days'': Daily quota/rate-limit counters (`*.daily-quota`)
 - ''7 days'': Active data (author works, cited-recent)
 - ''60 days'': Author profiles (change infrequently)
-- ''180 days'': Stable metadata (reference data, homepages)
+- ''180 days'': Stable metadata (reference data)
 - ''360 days'': Persistent read lists (never expire)
 
 !!! LRU (Least Recently Used) Eviction
@@ -165,6 +167,7 @@ const currentConfig = cache.getConfig(); // Get merged config (defaults + overri
 ```javascript
 const DEFAULT_CONFIG = {
   openalex: {
+    'daily-quota': { ttl: 172800000, maxItems: 100 },          // 2 days
     'author-profile': { ttl: 5184000000, maxItems: 5000 },  // 60 days
     metadata: { ttl: 15552000000, maxItems: 10000 },         // 180 days
     'author-works': { ttl: 604800000, maxItems: 2000 }       // 7 days

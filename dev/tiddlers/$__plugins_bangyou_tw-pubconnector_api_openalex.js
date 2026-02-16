@@ -51,7 +51,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             if (!countObj || !countObj.item || countObj.item.day !== today) {
                 countObj = { count: 0, day: today };
                 cacheHelper.addEntry(openalex_daily_request_count_key, countObj, { 
-                    dataType: 'openalex.metadata', 
+                    dataType: 'openalex.daily-quota', 
                     forceSave: false 
                 });
                 return 0;
@@ -172,7 +172,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             const countObj = { count: currentCount + 1, day: today };
             //console.log(`OpenAlex API request count for today (${today}): ${countObj.count}`);
             cacheHelper.addEntry(openalex_daily_request_count_key, countObj, { 
-                dataType: 'openalex.metadata', 
+                dataType: 'openalex.daily-quota', 
                 forceSave: false 
             });
             await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));

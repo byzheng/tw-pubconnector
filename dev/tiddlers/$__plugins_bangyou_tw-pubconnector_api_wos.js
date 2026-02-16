@@ -87,7 +87,7 @@ Web of Science utility for TiddlyWiki
             if (!countObj || !countObj.item || countObj.item.day !== today) {
                 countObj = { count: 0, day: today };
                 cacheHelper.addEntry(wos_daily_request_count_key, countObj, { 
-                    dataType: 'wos.metadata', 
+                    dataType: 'wos.daily-quota', 
                     forceSave: false 
                 });
                 return (0)
@@ -141,7 +141,7 @@ Web of Science utility for TiddlyWiki
                 const today = new Date().toISOString().slice(0, 10);
                 const countObj = { count: currentCount + 1, day: today };
                 cacheHelper.addEntry(wos_daily_request_count_key, countObj, { 
-                    dataType: 'wos.metadata', 
+                    dataType: 'wos.daily-quota', 
                     forceSave: false 
                 });
                 

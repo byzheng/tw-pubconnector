@@ -101,7 +101,7 @@ Scopus utility for TiddlyWiki
                 };
                 
                 cacheHelper.addEntry(scopus_daily_request_count_key, rateLimitInfo, { 
-                    dataType: 'scopus.metadata', 
+                    dataType: 'scopus.daily-quota', 
                     forceSave: false 
                 });
                 return rateLimitInfo;

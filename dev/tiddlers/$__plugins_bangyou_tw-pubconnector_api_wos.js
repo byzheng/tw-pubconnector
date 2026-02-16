@@ -14,7 +14,7 @@ Web of Science utility for TiddlyWiki
         return;
     }
     const fetch = require('node-fetch');
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("wos", 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("wos");
     const wos_daily_request_count_key = "__wos_daily_request_count";
     
     const platform_field = "researcherid"; // Field in tiddler that contains the WOS researcher ID
@@ -86,7 +86,10 @@ Web of Science utility for TiddlyWiki
             let countObj = cacheHelper.getCacheByKey(wos_daily_request_count_key);
             if (!countObj || !countObj.item || countObj.item.day !== today) {
                 countObj = { count: 0, day: today };
-                cacheHelper.addEntry(wos_daily_request_count_key, countObj, undefined, false);
+                cacheHelper.addEntry(wos_daily_request_count_key, countObj, { 
+                    dataType: 'wos.metadata', 
+                    forceSave: false 
+                });
                 return (0)
             }
             return typeof countObj.item.count === "number" ? countObj.item.count : 0;
@@ -137,7 +140,10 @@ Web of Science utility for TiddlyWiki
                 
                 const today = new Date().toISOString().slice(0, 10);
                 const countObj = { count: currentCount + 1, day: today };
-                cacheHelper.addEntry(wos_daily_request_count_key, countObj, undefined, false);
+                cacheHelper.addEntry(wos_daily_request_count_key, countObj, { 
+                    dataType: 'wos.metadata', 
+                    forceSave: false 
+                });
                 
                 return await response.json();
             } catch (error) {
@@ -184,7 +190,7 @@ Web of Science utility for TiddlyWiki
             const match = input.match(/(?:\/record\/|\/author\/record\/)([A-Z]-\d{4}-\d{4})/i);
             return match ? match[1] : input;
         }
-        async function cacheWorks(researcherid) {
+        async function cacheAuthorPublications(researcherid) {
             if (!isEnabled()) {
                 return;
             }
@@ -201,7 +207,10 @@ Web of Science utility for TiddlyWiki
                 return cacheResult.item;
             }
             const works = await wosWorksGet(`AI=${researcherid}`);
-            await cacheHelper.addEntry(researcherid, works);
+            await cacheHelper.addEntry(researcherid, works, { 
+                dataType: 'wos.author-works',
+                metadata: { researcherId: researcherid }
+            });
 
             return works;
         }
@@ -350,7 +359,7 @@ Web of Science utility for TiddlyWiki
         }
         return {
             isEnabled: isEnabled,
-            cacheWorks: cacheWorks,
+            cacheAuthorPublications: cacheAuthorPublications,
             getAuthorByDOI: getAuthorByDOI,
             getPlatformField: function () {
                 return platform_field;

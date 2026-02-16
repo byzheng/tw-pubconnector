@@ -126,7 +126,7 @@ ORCID utility for TiddlyWiki
             return match ? match[1] : input;
         }
 
-        async function cacheWorks(orcid) {
+        async function cacheAuthorPublications(orcid) {
             if (!isEnabled()) {
                 return;
             }
@@ -255,7 +255,7 @@ ORCID utility for TiddlyWiki
         }
         return {
             isEnabled: isEnabled,
-            cacheWorks: cacheWorks,
+            cacheAuthorPublications: cacheAuthorPublications,
             getAuthorByDOI: getAuthorByDOI,
             getPlatformField: function () {
                 return platform_field;

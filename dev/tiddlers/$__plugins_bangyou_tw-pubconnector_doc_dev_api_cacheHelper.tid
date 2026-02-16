@@ -1,0 +1,373 @@
+title: $:/plugins/bangyou/tw-pubconnector/doc/dev/api/cacheHelper.js
+caption: Cache Helper Developer Guide
+type: text/vnd.tiddlywiki
+tags: $:/tags/doc
+
+!! Overview
+
+The `cacheHelper` module provides intelligent caching with:
+- **Hierarchical Configuration**: Different TTLs (Time To Live) and size limits for different data types
+- **TTL-based Expiration**: Automatic removal of stale data
+- **LRU Eviction**: When size limit hit, removes least-used items
+- **Access Tracking**: Monitors how often items are accessed
+- **Metadata Storage**: Stores pagination, date ranges, and other context per item
+- **Persistence**: Compresses cache to disk automatically
+
+!! Core Concepts
+
+!!! Data Types
+
+Data is organized into types like:
+- `openalex.author-profile` - 60-day TTL (author profiles change slowly)
+- `openalex.author-works` - 7-day TTL (works list can have new items)
+- `scholar.metadata` - 180-day TTL (stable reference data)
+- `homepage.metadata` - 180-day TTL (homepage content rarely changes)
+
+Each dataType has independent TTL and size limits.
+
+!!! TTL (Time To Live)
+
+After TTL expires, entry is automatically deleted on next cleanup:
+- ''7 days'': Active data (author works, cited-recent)
+- ''60 days'': Author profiles (change infrequently)
+- ''180 days'': Stable metadata (reference data, homepages)
+- ''360 days'': Persistent read lists (never expire)
+
+!!! LRU (Least Recently Used) Eviction
+
+When a dataType exceeds maxItems, the system automatically deletes least-used entries:
+
+```
+Sort by: (1) accessCount (ascending), then (2) lastAccessed (ascending)
+Remove: Oldest unused items until size is acceptable
+```
+
+Example: If `openalex.author-works` has 2500 items but maxItems=2000, the 500 least-accessed items are removed.
+
+!!! Access Metrics
+
+Every time you retrieve an item, metadata updates:
+- `lastAccessed`: When was this entry last retrieved (auto-updated)
+- `accessCount`: How many times has this been retrieved (auto-incremented)
+
+This drives LRU eviction decisions.
+
+!! Architecture
+
+!!! Call Stack
+
+```
+Platform Module (e.g., openalex.js)
+    │
+    ├─→ cache.addEntry(id, data, { dataType, metadata })
+    │   (stores item + metrics)
+    │
+    ├─→ cache.getCacheByKey(id)
+    │   (retrieves + updates metrics)
+    │
+    └─→ cache.removeExpiredEntries()
+        (cleanup task, optional)
+        
+cachehelper.js
+    │
+    ├─ Config loading (DEFAULT_CONFIG + tiddler override)
+    ├─ TTL lookup by dataType
+    ├─ Size limit enforcement (per dataType)
+    ├─ LRU sorting and eviction
+    └─ Disk persistence (gzip compression)
+```
+
+!!! Config Hierarchy (Priority Order)
+
+1. **Tiddler**: `$:/config/tw-pubconnector/cache-config` (highest priority)
+2. **Custom Parameter**: Passed to `cacheHelper('name', customConfig)`
+3. **Defaults**: Built-in DEFAULT_CONFIG (fallback)
+
+Example: If you override in custom config, those values take precedence over defaults.
+
+!! API Reference
+
+!!! Initialize Cache
+
+```javascript
+const cache = cacheHelper('openalex');
+// or with custom config:
+const cache = cacheHelper('myplatform', {
+  'mydata': { 'type-a': { ttl: 86400000, maxItems: 1000 } }
+});
+```
+
+!!! Add Item
+
+```javascript
+cache.addEntry('author-123', workData, {
+  dataType: 'openalex.author-works',      // Determines TTL + limits
+  metadata: { authorId: 'O123', page: 1 }, // Store context
+  forceSave: true                           // Force disk write
+});
+
+// Multiple keys point to same item:
+cache.addEntry(['work-A', 'doi-10.xxxx'], workData, { dataType: 'openalex.metadata' });
+```
+
+!!! Get Item (Auto-Tracks Access)
+
+```javascript
+const entry = cache.getCacheByKey('author-123');
+// Returns:
+// {
+//   item: { ... original data ... },
+//   timestamp: 1708112400000,
+//   lastAccessed: 1708112500000,  // ← auto-updated on retrieval
+//   accessCount: 5,                // ← auto-incremented
+//   dataType: 'openalex.author-works',
+//   metadata: { authorId: 'O123', page: 1 }
+// }
+
+const data = entry.item;           // Actual cached data
+const stats = {                    // Access statistics
+  accessCount: entry.accessCount,
+  lastAccessed: entry.lastAccessed
+};
+```
+
+!!! Clean Up Expired + Oversized Content
+
+```javascript
+// Automatic cleanup (called periodically):
+const removed = cache.removeExpiredEntries();
+// Returns: { expired: 42, lru: 18 }  (removed 42 expired + 18 too-large items)
+
+// With options:
+cache.removeExpiredEntries({ 
+  dataTypeOverride: 'openalex.author-works',  // Check only this type
+  forceCleanup: true                           // Force even if not due
+});
+```
+
+!!! Save Cache to Disk
+
+```javascript
+cache.saveCache();  // Async save (compressed gzip)
+```
+
+!!! Inspect Cache State
+
+```javascript
+const allData = cache.getCaches();     // Get entire in-memory cache object
+const currentConfig = cache.getConfig(); // Get merged config (defaults + overrides)
+```
+
+!! Configuration Examples
+
+!!! Default Configuration (in code)
+
+```javascript
+const DEFAULT_CONFIG = {
+  openalex: {
+    'author-profile': { ttl: 5184000000, maxItems: 5000 },  // 60 days
+    metadata: { ttl: 15552000000, maxItems: 10000 },         // 180 days
+    'author-works': { ttl: 604800000, maxItems: 2000 }       // 7 days
+  },
+  scholar: {
+    'author-profile': { ttl: 5184000000, maxItems: 5000 },
+    'author-works': { ttl: 604800000, maxItems: 2000 },
+    metadata: { ttl: 15552000000, maxItems: 10000 }
+  }
+  // ... more platforms
+};
+```
+
+!!! Custom Configuration (via Tiddler)
+
+Create tiddler: `$:/config/tw-pubconnector/cache-config` (JSON type)
+
+```json
+{
+  "openalex": {
+    "author-works": {
+      "ttl": 259200000,
+      "maxItems": 500
+    }
+  }
+}
+```
+
+This overrides ONLY the `openalex.author-works` config; everything else uses defaults.
+
+!!! Custom Configuration (via Code)
+
+```javascript
+const cache = cacheHelper('scholar', {
+  'scholar': {
+    'author-works': { 
+      ttl: 3600000,    // 1 hour (testing)
+      maxItems: 100 
+    }
+  }
+});
+```
+
+!! How Cleanup Works (Two-Phase)
+
+!!! Phase 1: TTL-Based Removal
+
+```
+For each cached item:
+  age = now - timestamp
+  ttl = getTTL(dataType)
+  if age > ttl → DELETE
+```
+
+Items older than their dataType's TTL are removed immediately.
+
+!!! Phase 2: LRU Eviction
+
+```
+For each dataType:
+  items = all entries with this dataType
+  if items.count > maxItems:
+    sort by (accessCount, lastAccessed)  // Least-used first
+    remove (items.count - maxItems) items
+```
+
+If any dataType exceeds size limits, least-accessed items are pruned.
+
+!! Real-World Flow
+
+!!! Example: Caching OpenAlex Author Works
+
+```javascript
+// 1. REQUEST - Fetch author's works from OpenAlex API
+const response = await openalexAPI.getWorks('O123');
+
+// 2. CACHE - Store with metadata
+cache.addEntry('O123', response.data, {
+  dataType: 'openalex.author-works',  // 7-day TTL, max 2000 items
+  metadata: {
+    authorId: 'O123',
+    lastPage: response.meta.page,
+    totalResults: response.meta.count
+  }
+});
+
+// 3. LATER - Retrieve (auto-updates lastAccessed + accessCount)
+const cached = cache.getCacheByKey('O123');
+if (cached) {
+  console.log(`Hit! Accessed ${cached.accessCount} times, ${Date.now() - cached.lastAccessed}ms ago`);
+  return cached.item;
+} else {
+  // Cache miss - needs fresh fetch
+}
+
+// 4. DAILY - Cleanup runs automatically
+// Removes any openalex.author-works older than 7 days
+// If count exceeds 2000, removes least-accessed items
+```
+
+!! Debugging Tips
+
+!!! Check What's in Cache
+
+```javascript
+const cache = cacheHelper('openalex');
+const all = cache.getCaches();
+console.log(Object.keys(all).length);  // Total items cached
+for (const [key, entry] of Object.entries(all)) {
+  console.log(`${key}: age=${Date.now() - entry.timestamp}ms, 
+              accessed=${entry.accessCount}x, 
+              dataType=${entry.dataType}`);
+}
+```
+
+!!! Check Configuration
+
+```javascript
+const config = cache.getConfig();
+console.log(JSON.stringify(config, null, 2));
+// Shows merged config (custom > tiddler > defaults)
+```
+
+!!! Manual Cleanup
+
+```javascript
+const removed = cache.removeExpiredEntries({ forceCleanup: true });
+console.log(`Removed ${removed.expired} expired + ${removed.lru} oversized`);
+```
+
+!!! Force Disk Save
+
+```javascript
+cache.saveCache();  // Usually auto-saves after addEntry
+```
+
+!! Common Patterns
+
+!!! Check Cache Before API Call
+
+```javascript
+const cached = cache.getCacheByKey(authorId);
+if (cached && (Date.now() - cached.timestamp) < 604800000) {  // 7 days
+  return cached.item;  // Use cached
+}
+// Fetch fresh
+const fresh = await api.fetch(authorId);
+cache.addEntry(authorId, fresh, { dataType: 'openalex.author-works' });
+return fresh;
+```
+
+!!! Cache with Multiple Access Paths
+
+```javascript
+cache.addEntry([authorId, authorORCID, authorEmail], workData, {
+  dataType: 'openalex.author-works',
+  metadata: { authorId, orcid: authorORCID }
+});
+
+// Later, lookup by any key:
+cache.getCacheByKey(authorId);     // ✓ Hit
+cache.getCacheByKey(authorORCID);  // ✓ Hit (same data)
+cache.getCacheByKey(authorEmail);  // ✗ Miss (different key)
+```
+
+!!! Store Pagination Context
+
+```javascript
+cache.addEntry(authorId, pageData, {
+  dataType: 'openalex.author-works',
+  metadata: {
+    page: currentPage,
+    pageSize: 50,
+    totalResults: 1250,
+    dateRange: { from: '2020-01-01', to: '2025-12-31' }
+  }
+});
+
+// Retrieve and check if we need next page:
+const entry = cache.getCacheByKey(authorId);
+if (entry.metadata.page * entry.metadata.pageSize < entry.metadata.totalResults) {
+  // More pages available
+}
+```
+
+!! Performance Notes
+
+* **Lookup**: O(1) - direct key access
+* **Cleanup**: O(n) where n = items in dataType (runs infrequently)
+* **Disk I/O**: Compressed (gzip), non-blocking with 10s debounce
+* **Memory**: Depends on cached item size; LRU keeps bounded
+* **Access Tracking**: Minimal overhead (2 field updates per retrieval)
+
+!! Summary
+
+cacheHelper provides a **smart, self-managing cache** that:
+
+* ✅ Differentiates TTLs by data type (7d vs 60d vs 180d)
+* ✅ Automatically removes expired stale data
+* ✅ Prunes least-used items when limits approached
+* ✅ Tracks access patterns (count, timestamp)
+* ✅ Stores context via metadata (pagination, ranges, identifiers)
+* ✅ Persists to disk with compression
+* ✅ Allows runtime config override via tiddler or code
+
+Use the `dataType` parameter to control TTL; use `metadata` to store context; check `accessCount`/`lastAccessed` to understand usage patterns.

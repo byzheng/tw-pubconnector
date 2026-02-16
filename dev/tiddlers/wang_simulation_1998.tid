@@ -1,0 +1,31 @@
+anything-llm: 
+bibtex-abstract: A wheat phenology model based on the effects of temperature, vernalization and photoperiod was developed by introducing a temperature response function for development rate and vernalization, and the concepts of physiological development days and physiological vernalization days. This model also includes the prediction of the development of leaves, internodes and tillers. It gives EC stage values, i.e. the decimal code defined by Zadoks, J. C., Chang T. T. and Konzak, C. F. (1974) Weed Research14, 415â€“421, as outputs. The model was parameterized and tested using observation data from The Netherlands, north and south Germany. Simulation results show that the phenology model can be used to simulate development stages for different wheat varieties with acceptable accuracy. The model can be extended to other cereal crops.
+bibtex-author: Wang, E. and Engel, T.
+bibtex-date: 1998-09
+bibtex-doi: https://doi.org/10.1016/S0308-521X(98)00028-6
+bibtex-entry-type: article
+bibtex-issn: 0308-521X
+bibtex-journaltitle: Agricultural Systems
+bibtex-number: 1
+bibtex-pages: 1--24
+bibtex-title: Simulation of phenological development of wheat crops
+bibtex-url: http://www.sciencedirect.com/science/article/pii/S0308521X98000286
+bibtex-urldate: 2011-11-15
+bibtex-volume: 58
+bibtex-year: 1998
+bibtex-zotero-key: CGBCZDI9
+bibtex-zotero-pdf-key: 6H52C8V9
+cited-count: 41
+created: 20240702112939000
+creator: Bangyou Zheng
+fulltext-missing: 
+modified: 20260204062822422
+modifier: Bangyou Zheng
+reference: angus_phasic_1980 angus_phasic_1981 haun_visual_1973 weir_winter_1984 zadoks_decimal_1974
+reference-count: 5
+scholar-cid: VO7Q3viOG_EJ
+scholar-cites: 17373637187053088340
+scopus-eid: 2-s2.0-0032170867
+tags: bibtex-entry [[Enli Wang]] [[Citation Watch]]
+title: wang_simulation_1998
+type: text/vnd.tiddlywiki

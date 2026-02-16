@@ -16,7 +16,7 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
     // use cache
 
     const helper = require('$:/plugins/bangyou/tw-pubconnector/utils/helper.js').Helper();
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("homepage", 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("homepage");
 
     const platform_field = "url"; // Field in tiddler that contains the WOS researcher ID
 
@@ -29,7 +29,7 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
             }
             return tiddler && tiddler.fields.text === "enable";
         }
-        async function cacheWorks(url) {
+        async function cacheAuthorPublications(url) {
             if (!isEnabled()) {
                 return;
             }
@@ -52,12 +52,12 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
                 try {
                     const response = await fetch(url, { signal: controller.signal });
                     if (!response || !response.ok) {
-                        await cacheHelper.addEntry(url, []);
+                        await cacheHelper.addEntry(url, [], { dataType: 'homepage.metadata', metadata: { url: url } });
                         return;
                     }
                     const html = await response.text();
                     const dois = helper.extractDOIs(html);
-                    await cacheHelper.addEntry(url, dois);
+                    await cacheHelper.addEntry(url, dois, { dataType: 'homepage.metadata', metadata: { url: url } });
                     return dois;
                 } finally {
                     clearTimeout(timeoutId);
@@ -69,7 +69,7 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
                     console.error('Error processing request:', err && err.message ? err.message : err);
                 }
                 try {
-                    await cacheHelper.addEntry(url, []);
+                    await cacheHelper.addEntry(url, [], { dataType: 'homepage.metadata', metadata: { url: url } });
                 } catch (cacheErr) {
                     console.error('Failed to write empty cache entry for', url, cacheErr);
                 }
@@ -122,7 +122,7 @@ Authoring publication from homepage. Assume all dois in the homepage are publish
         }
         return {
             isEnabled: isEnabled,
-            cacheWorks: cacheWorks,
+            cacheAuthorPublications: cacheAuthorPublications,
             getAuthorByDOI: getAuthorByDOI,
             getPlatformField: function () {
                 return platform_field;

@@ -93,7 +93,7 @@ module-type: library
                     for (const id of ids) {
                         if (!id) continue;
                         try {
-                            await platform.cacheWorks(id);
+                            await platform.cacheAuthorPublications(id);
                         } catch (error) {
                             console.error(`Error updating cache for ${platform.constructor.name} with ID ${id}:`, error);
                         }

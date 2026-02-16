@@ -20,7 +20,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
     
     const openalex_daily_request_count_key = "__openalex_daily_request_count";
     const platform_field = "openalex"; // Field in tiddler that contains the ORCID ID
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('openalex', 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('openalex');
 
     // Track background fetches at module level (shared across all instances)
     var backgroundFetches = {}; // { key: true }
@@ -50,7 +50,10 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             let countObj = cacheHelper.getCacheByKey(openalex_daily_request_count_key);
             if (!countObj || !countObj.item || countObj.item.day !== today) {
                 countObj = { count: 0, day: today };
-                cacheHelper.addEntry(openalex_daily_request_count_key, countObj, undefined, false);
+                cacheHelper.addEntry(openalex_daily_request_count_key, countObj, { 
+                    dataType: 'openalex.metadata', 
+                    forceSave: false 
+                });
                 return 0;
             }
             return typeof countObj.item.count === "number" ? countObj.item.count : 0;
@@ -168,7 +171,10 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             const today = new Date().toISOString().slice(0, 10);
             const countObj = { count: currentCount + 1, day: today };
             //console.log(`OpenAlex API request count for today (${today}): ${countObj.count}`);
-            cacheHelper.addEntry(openalex_daily_request_count_key, countObj, undefined, false);
+            cacheHelper.addEntry(openalex_daily_request_count_key, countObj, { 
+                dataType: 'openalex.metadata', 
+                forceSave: false 
+            });
             await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -202,7 +208,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
 
         }
 
-        async function cacheWorks(openalexId) {
+        async function cacheAuthorPublications(openalexId) {
             if (!isEnabled()) {
                 return;
             }
@@ -221,13 +227,16 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             }
             const works = await getAuthorWorks(openalexId);
             console.log(`Caching ${works.length} works for OpenAlex ID: ${openalexId}`);
-            await cacheHelper.addEntry(openalexId, works);
+            await cacheHelper.addEntry(openalexId, works, { 
+                dataType: 'openalex.author-works',
+                metadata: { authorId: openalexId }
+            });
             return works;
         }
 
 
         // Get an author works by its OpenAlex ID 
-        // Note: This function retrieves works from cache only and does not make API calls. Use cacheWorks() to fetch and cache works if not already cached.
+        // Note: This function retrieves works from cache only and does not make API calls. Use cacheAuthorPublications() to fetch and cache works if not already cached.
         // params: Author openalexId (can be in various formats, e.g., "A12345", "https://openalex.org/A12345", or filter URL containing the ID)
         function getWorks(openalexId) {
             if (!isEnabled()) {
@@ -259,7 +268,10 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
             const url = buildOpenAlexApiUrl(`/works/${encodeURIComponent(doi)}`);
             const result = await openalexRequest(url);
             // Update cache with timestamp
-            cacheHelper.addEntry(key, result);
+            cacheHelper.addEntry(key, result, { 
+                dataType: 'openalex.metadata',
+                metadata: { doi: doi }
+            });
             return result;
         }
 
@@ -311,7 +323,14 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
                 });
                 
                 // Cache the results
-                cacheHelper.addEntry(cacheKey, citingWorks);
+                cacheHelper.addEntry(cacheKey, citingWorks, { 
+                    dataType: 'openalex.cited-recent',
+                    metadata: { 
+                        doi: doi, 
+                        days: days,
+                        fromDate: cutoffDateString
+                    }
+                });
                 console.log(`Background: Cached ${citingWorks.length} citing works for DOI ${doi}`);
             } catch (error) {
                 console.error(`Background: Error fetching citing works for DOI ${doi}: ${error.message}`);
@@ -469,7 +488,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
 
         return {
             isEnabled: isEnabled,
-            cacheWorks: cacheWorks,
+            cacheAuthorPublications: cacheAuthorPublications,
             getWorks: getWorks,
             getLatest: getLatest,
             getAuthorByDOI: getAuthorByDOI,

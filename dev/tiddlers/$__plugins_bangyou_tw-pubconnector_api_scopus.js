@@ -14,7 +14,7 @@ Scopus utility for TiddlyWiki
         return;
     }
     const fetch = require('node-fetch');
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("scopus", 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("scopus");
     const scopus_daily_request_count_key = "__scopus_daily_request_count";
     
     const platform_field = "scopus"; // Field in tiddler that contains the Scopus author ID
@@ -100,7 +100,10 @@ Scopus utility for TiddlyWiki
                     lastUpdated: Date.now()
                 };
                 
-                cacheHelper.addEntry(scopus_daily_request_count_key, rateLimitInfo, undefined, false);
+                cacheHelper.addEntry(scopus_daily_request_count_key, rateLimitInfo, { 
+                    dataType: 'scopus.metadata', 
+                    forceSave: false 
+                });
                 return rateLimitInfo;
             }
             return null;
@@ -191,7 +194,7 @@ Scopus utility for TiddlyWiki
             return match ? match[1] : input;
         }
 
-        async function cacheWorks(authorId) {
+        async function cacheAuthorPublications(authorId) {
             if (!isEnabled()) {
                 return;
             }
@@ -211,7 +214,10 @@ Scopus utility for TiddlyWiki
             if (!works || works.length === 0) {
                 throw new Error(`No works found for Scopus author ID: ${authorId}`);
             }
-            await cacheHelper.addEntry(authorId, works);
+            await cacheHelper.addEntry(authorId, works, { 
+                dataType: 'scopus.author-works',
+                metadata: { authorId: authorId }
+            });
 
             return works;
         }
@@ -362,7 +368,7 @@ Scopus utility for TiddlyWiki
 
         return {
             isEnabled: isEnabled,
-            cacheWorks: cacheWorks,
+            cacheAuthorPublications: cacheAuthorPublications,
             getAuthorByDOI: getAuthorByDOI,
             getPlatformField: function () {
                 return platform_field;

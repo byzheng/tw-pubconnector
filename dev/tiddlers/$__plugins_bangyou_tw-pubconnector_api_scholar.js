@@ -9,7 +9,7 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
     'use strict';
     if (!$tw.node) return;
 
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("scholar", 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("scholar");
     const crossref = require('$:/plugins/bangyou/tw-pubconnector/api/crossref.js').Crossref();
     const platform_field = "google-scholar"; // This should be a Google Scholar ID or URL
 
@@ -60,14 +60,18 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
             const current = getPending();
             if (!current.includes(id)) {
                 current.push(id);
-                cacheHelper.addEntry(pendingKey, current);
+                cacheHelper.addEntry(pendingKey, current, { 
+                    dataType: 'scholar.metadata'
+                });
             }
         }
         function clearAllPending() {
             if (!isEnabled()) {
                 return;
             }
-            cacheHelper.addEntry(pendingKey, []);
+            cacheHelper.addEntry(pendingKey, [], { 
+                dataType: 'scholar.metadata'
+            });
         }
         function clearPending(id) {
             if (!isEnabled()) {
@@ -82,7 +86,9 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
             }
             let current = getPending();
             current = current.filter(entry => entry !== id);
-            cacheHelper.addEntry(pendingKey, current);
+            cacheHelper.addEntry(pendingKey, current, { 
+                dataType: 'scholar.metadata'
+            });
         }
 
         function getStatus() {
@@ -133,7 +139,7 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
                 }
             }
         }
-        async function cacheWorks(id) {
+        async function cacheAuthorPublications(id) {
             
             if (!isEnabled()) {
                 return Promise.resolve();
@@ -158,7 +164,7 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
             addPending(id);
             return;
         }
-        async function performCacheWorks(id, works) {
+        async function performCacheAuthorPublications(id, works) {
             if (!isEnabled()) {
                 return Promise.resolve();
             }
@@ -235,7 +241,11 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
                     console.log("Check hits:", work["check-hits"])
                     if (!workCF || !workCF.doi) {
                         // Cache progress even if DOI lookup fails
-                        cacheHelper.addEntry(id, works, Date.now(), false);
+                        cacheHelper.addEntry(id, works, { 
+                            dataType: 'scholar.author-works',
+                            metadata: { scholarId: id },
+                            forceSave: false
+                        });
                         continue;
                     }
                     work['doi'] = workCF.doi;
@@ -245,13 +255,21 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
                         
                     if (!workCF2 || !workCF2.message) {
                         // Cache progress even if metadata fetch fails
-                        cacheHelper.addEntry(id, works, Date.now(), false);
+                        cacheHelper.addEntry(id, works, { 
+                            dataType: 'scholar.author-works',
+                            metadata: { scholarId: id },
+                            forceSave: false
+                        });
                         continue;
                     }
                     
                     if (!workCF2.message.publicationDate) {
                         // Cache progress even if publication date is missing
-                        cacheHelper.addEntry(id, works, Date.now(), false);
+                        cacheHelper.addEntry(id, works, { 
+                            dataType: 'scholar.author-works',
+                            metadata: { scholarId: id },
+                            forceSave: false
+                        });
                         continue;
                     }
                     work.crossref = workCF2.message;
@@ -259,10 +277,17 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
                 }
                 
                 // Cache after processing each item to preserve progress
-                cacheHelper.addEntry(id, works, Date.now(), false);
+                cacheHelper.addEntry(id, works, { 
+                    dataType: 'scholar.author-works',
+                    metadata: { scholarId: id },
+                    forceSave: false
+                });
             }
             // Final cache update after all works processed
-            cacheHelper.addEntry(id, works);
+            cacheHelper.addEntry(id, works, { 
+                dataType: 'scholar.author-works',
+                metadata: { scholarId: id }
+            });
         }
         function getWorks(id) {
             if (!isEnabled()) {
@@ -403,8 +428,8 @@ Google Scholar utility for TiddlyWiki (via external Chrome extension)
             isEnabled,
             getStatus,
             clearAllPending,
-            cacheWorks,
-            performCacheWorks,
+            cacheAuthorPublications,
+            performCacheAuthorPublications,
             getWorks,
             addPending,
             getAuthorByDOI,

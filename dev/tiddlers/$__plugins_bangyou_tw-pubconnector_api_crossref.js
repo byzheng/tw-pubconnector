@@ -16,7 +16,7 @@ Crossref API utility for TiddlyWiki
     const fetch = require('node-fetch');
     
     const platform_field = "crossref"; // Field in tiddler that contains the Crossref ID
-    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('crossref', 9999999);
+    const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper('crossref');
     
     // Rate limiting: Conservative approach to avoid 429 errors
     const MIN_REQUEST_INTERVAL = 350; // 350ms = ~2.9 requests/sec (conservative but reasonable)
@@ -105,7 +105,10 @@ Crossref API utility for TiddlyWiki
             const result = await crossrefRequest(url);
 
             // Update cache
-            cacheHelper.addEntry(key, result);
+            cacheHelper.addEntry(key, result, { 
+                dataType: 'crossref.metadata',
+                metadata: { doi: doi }
+            });
 
             if (simplify && result.message) {
                 return simplifyWorkData(result);

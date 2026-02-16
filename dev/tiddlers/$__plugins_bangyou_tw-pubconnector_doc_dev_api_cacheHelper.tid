@@ -176,6 +176,9 @@ const DEFAULT_CONFIG = {
     'author-profile': { ttl: 5184000000, maxItems: 5000 },
     'author-works': { ttl: 604800000, maxItems: 2000 },
     metadata: { ttl: 15552000000, maxItems: 10000 }
+  },
+  homepage: {
+    'author-works': { ttl: 7776000000, maxItems: 10000 }     // 90 days
   }
   // ... more platforms
 };

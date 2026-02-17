@@ -1,8 +1,0 @@
-caption: Gatha
-created: 20220201102742703
-modified: 20221020062003806
-tags: $:/tags/SideBar
-title: $:/plugins/kookma/gatha/ui/sidebar
-type: text/vnd.tiddlywiki
-
-{{$:/plugins/kookma/gatha/tabs/ide}}

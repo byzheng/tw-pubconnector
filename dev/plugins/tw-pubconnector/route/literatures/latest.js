@@ -1,0 +1,106 @@
+/*\
+title: $:/plugins/bangyou/tw-pubconnector/route/literature/latest.js
+type: application/javascript
+module-type: route
+\*/
+
+/**
+ * TiddlyWiki Route: GET /^\/literatures\/latest$/
+ * 
+ * Retrieves the latest literature tiddlers from the wiki based on creation/modification time.
+ * 
+ * Request:
+ *   - Method: GET
+ *   - Path: /literatures/latest
+ *   - Query Parameters:
+ *     - days (optional): Number of days to look back for latest entries (default: 60)
+ * 
+ * Response:
+ *   - 200: On success, returns JSON with status "success", message, and array of latest tiddlers
+ *   - 400: On error, returns JSON with status "error", error message, and error code
+ * 
+ * Response Format:
+ *   Success:
+ *   {
+ *     "status": "success",
+ *     "code": 200,
+ *     "message": "Latest literatures retrieved successfully for past X days",
+ *     "tiddlers": [...] // Array of literature tiddler objects
+ *   }
+ * 
+ *   Error:
+ *   {
+ *     "status": "error",
+ *     "code": 400,
+ *     "message": "Error retrieving latest literatures: [error details]"
+ *   }
+ * 
+ * Workflow:
+ *   1. Extracts 'days' parameter from query string (defaults to 60 days if not provided)
+ *   2. Validates that days parameter is a positive integer
+ *   3. Calls authoring.getLatest(days) to retrieve recent literature entries
+ *   4. Returns the results with success status and metadata
+ * 
+ * Error Handling:
+ *   - Returns 400 if an exception occurs during retrieval
+ *   - Logs errors to console for debugging
+ * 
+ * Dependencies:
+ *   - $:/plugins/bangyou/tw-pubconnector/api/authoring.js (Authoring API with getLatest method)
+ * 
+ * @module $:/plugins/bangyou/tw-pubconnector/route/literature/latest.js
+ * @method GET
+ * @route /^\/literatures\/latest$/
+ * @platforms ["node"]
+ * @param {Object} request - HTTP request object
+ * @param {Object} response - HTTP response object  
+ * @param {Object} state - State object containing query parameters (state.queryParameters.days)
+ * @returns {void}
+ */
+
+(function () {
+	/*jslint node: true, browser: true */
+	/*global $tw: false */
+	"use strict";
+
+	var authoring = require("$:/plugins/bangyou/tw-pubconnector/api/authoring.js").Authoring();
+
+	exports.method = "GET";
+	exports.platforms = ["node"];
+	exports.path = /^\/literatures\/latest$/;
+
+	exports.handler = async function (request, response, state) {
+		try {
+			// Check if queryParameters exists and has days parameter
+			let days = 60; // default value
+			if (state && state.queryParameters && state.queryParameters.days) {
+				const parsedDays = parseInt(state.queryParameters.days);
+				if (!isNaN(parsedDays) && parsedDays > 0) {
+					days = parsedDays;
+				}
+			}
+			const results = await authoring.getLatest(days);
+			response.writeHead(200, { "Content-Type": "application/json" });
+			response.end(JSON.stringify({
+				"status": "success",
+				"code": 200,
+				"message": "Latest literatures retrieved successfully for past " + days + " days",
+				"items": results
+			}));
+			return;
+
+		} catch (err) {
+			console.error("Error retrieving latest literatures", err);
+			response.writeHead(400);
+			response.end(JSON.stringify({
+				"status": "error",
+				"message": "Error retrieving latest literatures: " + err.message,
+				"code": 400
+			}));
+			return
+		}
+
+	};
+
+}());
+

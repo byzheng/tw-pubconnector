@@ -8,7 +8,6 @@
     "source": "https://tw-pubconnector.bangyou.me",
     "list": "readme settings license",
     "parent-plugin": "",
-    "dependents": "",
-    "plugin-type": "plugin",
-    "packaged-by": "Gatha on 13th December 2024, 18:34:03"
+    "dependents": "bangyou/tw-livebridge",
+    "plugin-type": "plugin"
 }

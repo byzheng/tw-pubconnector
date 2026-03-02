@@ -357,7 +357,7 @@ FEATURES:
             for (const dataType of Object.keys(flatConfig)) {
                 const maxItems = dataTypeOverride ? getMaxItems(dataTypeOverride) : getMaxItems(dataType);
                 const typedEntries = updatedKeys
-                    .filter(k => cache[k].dataType === dataType)
+                    .filter(k => cache[k] && cache[k].dataType === dataType)
                     .map(k => ({ key: k, lastAccessed: cache[k].lastAccessed, accessCount: cache[k].accessCount }));
                 
                 if (typedEntries.length > maxItems) {

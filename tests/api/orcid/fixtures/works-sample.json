@@ -1,0 +1,71 @@
+[
+  {
+    "title": {
+      "title": {
+        "value": "Modeling Numerical Factors Influencing Legume Yield Under Simulated Waterlogging"
+      },
+      "subtitle": null,
+      "translated-title": null
+    },
+    "identifiers": {
+      "doi": "10.5555/jacs.2024.00001"
+    },
+    "put-code": 123456789,
+    "created-date": {
+      "value": 1720000000000
+    },
+    "last-modified-date": {
+      "value": 1720000100000
+    },
+    "source": {
+      "source-orcid": null,
+      "source-client-id": {
+        "uri": "https://orcid.org/client/0000-0002-3456-7890",
+        "path": "0000-0002-3456-7890",
+        "host": "orcid.org"
+      },
+      "source-name": {
+        "value": "SampleSource"
+      },
+      "assertion-origin-orcid": null,
+      "assertion-origin-client-id": null,
+      "assertion-origin-name": null
+    },
+    "external-ids": {
+      "external-id": [
+        {
+          "external-id-type": "doi",
+          "external-id-value": "10.5555/jacs.2024.00001",
+          "external-id-normalized": {
+            "value": "10.5555/jacs.2024.00001",
+            "transient": true
+          },
+          "external-id-normalized-error": null,
+          "external-id-url": {
+            "value": "https://doi.org/10.5555/jacs.2024.00001"
+          },
+          "external-id-relationship": "self"
+        }
+      ]
+    },
+    "url": {
+      "value": "https://doi.org/10.5555/jacs.2024.00001"
+    },
+    "type": "journal-article",
+    "publication-date": {
+      "year": {
+        "value": "2024"
+      },
+      "month": {
+        "value": "09"
+      },
+      "day": null
+    },
+    "journal-title": {
+      "value": "Journal of Applied Crop Systems"
+    },
+    "visibility": "public",
+    "path": "/0000-0000-0000-0000/work/123456789",
+    "display-index": "1"
+  }
+]

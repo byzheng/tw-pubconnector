@@ -21,4 +21,4 @@ For learning plugin features, syntax, tutorial and examples see the plugin demo 
 These tests are for local development only and are not required for plugin deployment.
 
 - Run on Windows: `scripts\\test.bat`
-- Direct Node command: `node --test tests\\cachehelper.test.js tests\\opencitations.test.js tests\\orcid.test.js`
+- Direct Node command: `node --test tests\\cachehelper.test.js tests\\opencitations.test.js tests\\api\\orcid\\orcid.test.js`

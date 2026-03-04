@@ -3,7 +3,7 @@ title: $:/plugins/bangyou/tw-pubconnector/utils/cachehelper.js
 type: application/javascript
 module-type: library
 
-Caching utility for TiddlyWiki with data type-specific TTL and LRU eviction
+Caching utility for TiddlyWiki with data type-specific TTL (Time to Live) and LRU (Least Recently Used) eviction
 
 CONFIG TIDDLER:
   Create a tiddler named: $:/config/tw-pubconnector/cache-config

@@ -223,3 +223,96 @@ test('getAuthorByDOI returns empty array when ORCID integration is disabled', ()
 
     assert.deepEqual(api.getAuthorByDOI('10.1000/x'), []);
 });
+
+test('getLatest returns only recent works with complete publication date and DOI', () => {
+    const twMock = createTwMock({ enabled: true });
+    const recentDate = new Date();
+    recentDate.setDate(recentDate.getDate() - 10);
+
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 120);
+
+    const cacheMock = createInMemoryCache({
+        '0000-0001-1111-1111': {
+            item: [
+                {
+                    title: { title: { value: 'Recent Paper' } },
+                    identifiers: { doi: '10.1000/recent' },
+                    'journal-title': { value: 'Recent Journal' },
+                    'publication-date': {
+                        year: { value: String(recentDate.getFullYear()) },
+                        month: { value: String(recentDate.getMonth() + 1).padStart(2, '0') },
+                        day: { value: String(recentDate.getDate()).padStart(2, '0') }
+                    }
+                },
+                {
+                    title: { title: { value: 'Old Paper' } },
+                    identifiers: { doi: '10.1000/old' },
+                    'journal-title': { value: 'Old Journal' },
+                    'publication-date': {
+                        year: { value: String(oldDate.getFullYear()) },
+                        month: { value: String(oldDate.getMonth() + 1).padStart(2, '0') },
+                        day: { value: String(oldDate.getDate()).padStart(2, '0') }
+                    }
+                }
+            ]
+        },
+        '__orcid_daily_request_count': {
+            item: { count: 1, day: '2099-01-01' }
+        }
+    });
+
+    const fetchMock = async () => ({ ok: true, status: 200, json: async () => ({ group: [] }) });
+    const ORCID = loadORCIDWithMocks({ twMock, fetchMock, cacheMock });
+    const api = ORCID('https://pub.orcid.org');
+
+    const latest = api.getLatest(90);
+
+    assert.equal(latest.length, 1);
+    assert.equal(latest[0].doi, '10.1000/recent');
+    assert.equal(latest[0].title, 'Recent Paper');
+    assert.equal(latest[0].journalTitle, 'Recent Journal');
+    assert.equal(latest[0].platform, 'ORCID');
+});
+
+test('getLatest skips works with incomplete date or missing DOI and returns [] when disabled', () => {
+    const enabledTwMock = createTwMock({ enabled: true });
+    const cacheMock = createInMemoryCache({
+        '0000-0001-1111-1111': {
+            item: [
+                {
+                    title: { title: { value: 'Missing day' } },
+                    identifiers: { doi: '10.1000/missing-day' },
+                    'publication-date': {
+                        year: { value: '2025' },
+                        month: { value: '11' },
+                        day: null
+                    }
+                },
+                {
+                    title: { title: { value: 'Missing DOI' } },
+                    identifiers: { doi: '' },
+                    'publication-date': {
+                        year: { value: '2025' },
+                        month: { value: '11' },
+                        day: { value: '01' }
+                    }
+                },
+                {
+                    title: { title: { value: 'Missing date' } },
+                    identifiers: { doi: '10.1000/missing-date' }
+                }
+            ]
+        }
+    });
+
+    const fetchMock = async () => ({ ok: true, status: 200, json: async () => ({ group: [] }) });
+    const ORCIDEnabled = loadORCIDWithMocks({ twMock: enabledTwMock, fetchMock, cacheMock });
+    const apiEnabled = ORCIDEnabled('https://pub.orcid.org');
+    assert.deepEqual(apiEnabled.getLatest(365), []);
+
+    const disabledTwMock = createTwMock({ enabled: false });
+    const ORCIDDisabled = loadORCIDWithMocks({ twMock: disabledTwMock, fetchMock, cacheMock });
+    const apiDisabled = ORCIDDisabled('https://pub.orcid.org');
+    assert.deepEqual(apiDisabled.getLatest(365), []);
+});

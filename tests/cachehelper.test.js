@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const zlib = require('zlib');
 
 const { loadCacheHelperWithTw } = require('./helpers/load-cachehelper');
 
@@ -116,4 +117,88 @@ test('cacheName validation rejects path traversal or special characters', () => 
 
     assert.throws(() => cacheHelper('../unsafe'), /Invalid cacheName/);
     assert.throws(() => cacheHelper('bad:name'), /Invalid cacheName/);
+});
+
+test('saveCache persists gzip cache file and reloads entries', async () => {
+    const { twMock, root } = createTwMock();
+    const cacheHelper = loadCacheHelperWithTw(twMock);
+    const cacheName = 'persist-test';
+
+    const cache = cacheHelper(cacheName);
+    cache.addEntry('persist-key', { value: 42 }, {
+        dataType: 'openalex.metadata'
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const cacheFile = path.join(root, 'wiki', 'cache', `${cacheName}-cache.json.gz`);
+    assert.equal(fs.existsSync(cacheFile), true);
+
+    const compressed = fs.readFileSync(cacheFile);
+    const raw = zlib.gunzipSync(compressed).toString('utf8');
+    const parsed = JSON.parse(raw);
+    assert.ok(parsed['persist-key']);
+    assert.deepEqual(parsed['persist-key'].item, { value: 42 });
+
+    const reloaded = cacheHelper(cacheName);
+    const entry = reloaded.getCacheByKey('persist-key');
+    assert.ok(entry);
+    assert.deepEqual(entry.item, { value: 42 });
+});
+
+test('custom config takes precedence over tiddler config and default config', () => {
+    const tiddlerConfig = JSON.stringify({
+        openalex: {
+            metadata: { ttl: 10, maxItems: 1 }
+        }
+    });
+    const { twMock } = createTwMock({ configText: tiddlerConfig });
+    const cacheHelper = loadCacheHelperWithTw(twMock);
+
+    const cache = cacheHelper('precedence-test', {
+        openalex: {
+            metadata: { ttl: 999, maxItems: 77 }
+        }
+    });
+
+    const config = cache.getConfig();
+    assert.equal(config.openalex.metadata.ttl, 999);
+    assert.equal(config.openalex.metadata.maxItems, 77);
+});
+
+test('unknown dataType falls back to default ttl for expiration', () => {
+    const { twMock } = createTwMock();
+    const cacheHelper = loadCacheHelperWithTw(twMock);
+    const cache = cacheHelper('default-ttl-test');
+
+    const thirtyOneDays = 31 * 24 * 60 * 60 * 1000;
+    cache.addEntry('old-unknown', { a: 1 }, {
+        dataType: 'some.unknown-type',
+        timestamp: Date.now() - thirtyOneDays,
+        forceSave: false
+    });
+    cache.addEntry('fresh-unknown', { a: 2 }, {
+        dataType: 'some.unknown-type',
+        timestamp: Date.now(),
+        forceSave: false
+    });
+
+    const removed = cache.removeExpiredEntries();
+    const all = cache.getCaches();
+
+    assert.equal(removed.expired, 1);
+    assert.equal(all['old-unknown'], undefined);
+    assert.ok(all['fresh-unknown']);
+});
+
+test('invalid tiddler cache config falls back to defaults safely', () => {
+    const { twMock } = createTwMock({ configText: '{invalid-json' });
+    const cacheHelper = loadCacheHelperWithTw(twMock);
+
+    const cache = cacheHelper('invalid-config-test');
+    const config = cache.getConfig();
+
+    assert.ok(config.default);
+    assert.equal(typeof config.default.ttl, 'number');
+    assert.equal(typeof config.default.maxItems, 'number');
 });

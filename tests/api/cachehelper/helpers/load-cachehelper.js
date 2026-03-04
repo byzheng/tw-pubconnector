@@ -4,6 +4,8 @@ const cacheHelperModulePath = path.resolve(
     __dirname,
     '..',
     '..',
+    '..',
+    '..',
     'dev',
     'plugins',
     'tw-pubconnector',

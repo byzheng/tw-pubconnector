@@ -16,7 +16,6 @@ exports.handler = async function (request, response, state) {
         const data = JSON.parse(state.data);
         const id = data.id;
         const works = data.works;
-
         if (!id || !Array.isArray(works)) {
             response.writeHead(400, { "Content-Type": "application/json" });
             response.end(JSON.stringify({
@@ -26,7 +25,7 @@ exports.handler = async function (request, response, state) {
             }));
         }
 
-        scholar.performCacheWorks(id, works);
+        scholar.performCacheAuthorPublications(id, works);
         response.writeHead(200, { "Content-Type": "application/json" });
         response.end(JSON.stringify({
             status: "success",

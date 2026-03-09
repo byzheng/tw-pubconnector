@@ -1,0 +1,12 @@
+{
+    "title": "$:/plugins/bangyou/tw-livebridge",
+    "name": "tw-livebridge",
+    "description": "Real-time WebSocket bridge between TiddlyWiki and VS Code for instant editing and preview.",
+    "author": "Bangyou Zheng",
+    "version": "0.1.2",
+    "core-version": ">5.1.23",
+    "source": "https://tw-livebridge.bangyou.me",
+    "list": "readme settings license",
+    "parent-plugin": "",
+    "plugin-type": "plugin"
+}

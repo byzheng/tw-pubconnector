@@ -1,0 +1,26 @@
+created: 20240802085639320
+modified: 20250923003413784
+revision: 0
+tags: 
+title: $:/plugins/bangyou/tw-livebridge/readme
+type: text/vnd.tiddlywiki
+
+; tw-livebridge
+
+TW LiveBridge creates a real-time WebSocket link between TiddlyWiki and external tools like VS Code and R, enabling instant two-way communication. Edit a tiddler in your editor and preview it live in the browser, or click in TiddlyWiki to open the tiddler in your editor—no manual refresh required.
+
+; Used in other tools
+
+The bidirectional communication features of TW LiveBridge are leveraged by other projects to enhance their workflows:
+
+* [[TiddlyEdit|https://github.com/byzheng/vscode-tiddlyedit/]] (VS Code extension) – allows seamless editing of tiddlers directly from VS Code.
+* [[rtiddlywiki|https://github.com/byzheng/rtiddlywiki/]] (R package) – enables preview of R Markdown files inside TiddlyWiki.
+
+These tools don’t use the plugin code directly; instead, they rely on the real-time communication channel established by TW LiveBridge.
+
+;Code and demo
+
+For learning plugin features, syntax, tutorial and examples see the plugin demo and code pages
+
+* Demo: https://tw-livebridge.bangyou.me
+* Code: https://github.com/byzheng/tw-livebridge

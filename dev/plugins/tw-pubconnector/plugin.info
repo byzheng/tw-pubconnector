@@ -8,6 +8,5 @@
     "source": "https://tw-pubconnector.bangyou.me",
     "list": "readme settings license",
     "parent-plugin": "",
-    "dependents": "bangyou/tw-livebridge",
     "plugin-type": "plugin"
 }

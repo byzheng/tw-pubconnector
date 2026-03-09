@@ -1,0 +1,36 @@
+created: 20260112002633093
+modified: 20260112002641685
+revision: 0
+tags: $:/tags/Stylesheet
+title: $:/plugins/bangyou/tw-livebridge/styles/doclink.css
+type: text/css
+
+.tw-doclink {
+    color: #9e83ca;              /* Indigo-700 */
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dotted currentColor;
+    cursor: pointer;
+    transition: color 0.15s ease, border-bottom-style 0.15s ease;
+    position: relative;
+}
+
+/* Book icon prefix */
+.tw-doclink::before {
+    content: "📄";
+    font-size: 0.85em;
+    margin-right: 0.25em;
+    opacity: 0.75;
+    vertical-align: baseline;
+}
+
+/* Hover */
+.tw-doclink:hover {
+    color: #5b21b6;              /* Indigo-800 */
+    border-bottom-style: solid;
+}
+
+/* Active / click */
+.tw-doclink:active {
+    color: #4c1d95;              /* Indigo-900 */
+}

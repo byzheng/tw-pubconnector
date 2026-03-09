@@ -41,7 +41,7 @@ module-type: library
     var platforms = [
         require('$:/plugins/bangyou/tw-pubconnector/api/wos.js').WOS(),
         require('$:/plugins/bangyou/tw-pubconnector/api/scopus.js').SCOPUS(),
-        require('$:/plugins/bangyou/tw-pubconnector/api/homepage.js').Homepage(),
+        //require('$:/plugins/bangyou/tw-pubconnector/api/homepage.js').Homepage(),
         require('$:/plugins/bangyou/tw-pubconnector/api/orcid.js').ORCID(),
         require('$:/plugins/bangyou/tw-pubconnector/api/scholar.js').Scholar(),
         require('$:/plugins/bangyou/tw-pubconnector/api/openalex.js').OpenAlex(),

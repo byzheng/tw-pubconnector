@@ -5,7 +5,7 @@ description: Real-time WebSocket bridge between TiddlyWiki and VS Code for insta
 list: readme license
 modified: 20260112002927027
 name: tw-livebridge
-packaged-by: Gatha on 12th January 2026, 10:36:28
+packaged-by: Gatha on 9th March 2026, 10:51:33
 plugin-type: plugin
 source: https://tw-livebridge.bangyou.me
 tags: 

@@ -1,10 +1,3 @@
-created: 20260111235249201
-modified: 20260112001029861
-module-type: widget
-revision: 0
-title: $:/plugins/bangyou/tw-livebridge/widget/opendoc.js
-type: application/javascript
-
 
 /*\
 title: $:/plugins/bangyou/tw-livebridge/widget/opendoc.js

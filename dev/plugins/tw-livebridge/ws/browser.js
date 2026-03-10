@@ -1,11 +1,3 @@
-created: 20250808104706169
-modified: 20250808105942897
-module-type: startup
-revision: 0
-tags: 
-title: $:/plugins/bangyou/tw-livebridge/ws/browser.js
-type: application/javascript
-
 /*\
 title: $:/plugins/bangyou/tw-livebridge/ws/browser.js
 type: application/javascript

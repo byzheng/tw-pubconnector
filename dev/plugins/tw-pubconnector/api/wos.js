@@ -16,6 +16,8 @@ Web of Science utility for TiddlyWiki
     const fetch = require('node-fetch');
     const cacheHelper = require('$:/plugins/bangyou/tw-pubconnector/api/cachehelper.js').cacheHelper("wos");
     const wos_daily_request_count_key = "__wos_daily_request_count";
+    const wos_rate_limit_cooldown_key = "__wos_rate_limit_cooldown_until";
+    const RATE_LIMIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
     
     const platform_field = "researcherid"; // Field in tiddler that contains the WOS researcher ID
 
@@ -94,11 +96,28 @@ Web of Science utility for TiddlyWiki
             }
             return typeof countObj.item.count === "number" ? countObj.item.count : 0;
         }
-        async function wosRequest(url, retryCount = 0) {
+        function getRateLimitCooldownUntil() {
+            const cooldownObj = cacheHelper.getCacheByKey(wos_rate_limit_cooldown_key);
+            const until = cooldownObj && cooldownObj.item ? Number(cooldownObj.item.until) : 0;
+            return Number.isFinite(until) ? until : 0;
+        }
+        function setRateLimitCooldown(until) {
+            cacheHelper.addEntry(wos_rate_limit_cooldown_key, { until: until }, {
+                dataType: 'wos.rate-limit-cooldown',
+                forceSave: false
+            });
+        }
+        async function wosRequest(url) {
             const currentCount = getDailyRequestCount();
             const wos_daily_limit = getWOSDailyLimit();
             if (currentCount >= wos_daily_limit) {
                 throw new Error(`Daily request limit of ${wos_daily_limit} for Web of Science API has been reached.`);
+            }
+            const cooldownUntil = getRateLimitCooldownUntil();
+            const nowForCooldown = Date.now();
+            if (cooldownUntil > nowForCooldown) {
+                const waitHours = Math.ceil((cooldownUntil - nowForCooldown) / (60 * 60 * 1000));
+                throw new Error(`Web of Science rate limit cooldown is active. Please wait about ${waitHours} more hour(s) before making new requests.`);
             }
             const apiKey = getWOSApiKey();
             if (!apiKey || apiKey === "") {
@@ -122,16 +141,11 @@ Web of Science utility for TiddlyWiki
             try {
                 const response = await fetch(url, { headers });
                 
-                // Handle 429 rate limit errors with exponential backoff
+                // If WOS reports rate limit exceeded, pause all requests for 24 hours.
                 if (response.status === 429) {
-                    const maxRetries = 3;
-                    if (retryCount < maxRetries) {
-                        const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10s
-                        console.log(`Rate limited (429). Retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${maxRetries})...`);
-                        await new Promise(resolve => setTimeout(resolve, backoffDelay));
-                        return await wosRequest(url, retryCount + 1);
-                    }
-                    throw new Error(`Rate limit exceeded after ${maxRetries} retries. Please wait before making more requests.`);
+                    const cooldownUntilTs = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+                    setRateLimitCooldown(cooldownUntilTs);
+                    throw new Error("Web of Science rate limit exceeded. Further requests are paused for 24 hours.");
                 }
                 
                 if (!response.ok) {

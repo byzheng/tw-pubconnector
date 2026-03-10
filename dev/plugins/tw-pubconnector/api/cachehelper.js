@@ -327,49 +327,47 @@ FEATURES:
          * @param {object} options - { maxItemsOverride, dataTypeOverride, forceCleanup }
          */
         function removeExpiredEntries(options = {}) {
+            // Rolling removal: only remove the oldest 1/TTL fraction of entries per dataType
             const now = Date.now();
-            const { maxItemsOverride, dataTypeOverride, forceCleanup = false } = options;
-            const cacheKeys = Object.keys(cache);
-            
-            if (cacheKeys.length === 0) return;
-            
             const removedCount = { expired: 0, lru: 0 };
-            
-            // Step 1: Remove entries expired based on their data type's TTL
-            const entriesToProcess = [];
-            
-            for (const key of cacheKeys) {
-                const entry = cache[key];
+            // Group entries by dataType
+            const entriesByType = {};
+            for (const [key, entry] of Object.entries(cache)) {
                 const dataType = entry.dataType || 'default';
+                if (!entriesByType[dataType]) entriesByType[dataType] = [];
+                entriesByType[dataType].push({ key, entry });
+            }
+            for (const [dataType, entries] of Object.entries(entriesByType)) {
                 const ttl = getTTL(dataType);
-                const age = now - entry.timestamp;
-                
-                if (age > ttl) {
-                    delete cache[key];
+                if (!ttl || !Number.isFinite(ttl) || ttl <= 0) continue;
+                // Calculate fraction: 1/TTL (in days)
+                let days = ttl / (24 * 60 * 60 * 1000);
+                if (days < 1) days = 1;
+                let fraction = 1 / days;
+                // Number of entries to remove (at least 1 if entries exist)
+                const n = Math.max(1, Math.round(entries.length * fraction));
+                // Sort by timestamp (oldest first)
+                entries.sort((a, b) => a.entry.timestamp - b.entry.timestamp);
+                // Remove the oldest n entries (regardless of expiry)
+                for (let i = 0; i < n && i < entries.length; i++) {
+                    delete cache[entries[i].key];
                     removedCount.expired++;
-                } else {
-                    entriesToProcess.push({ key, entry, age, dataType });
                 }
             }
-            
-            // Step 2: LRU eviction - remove least recently used items if over size limit
+            // Step 2: LRU eviction - keep as before
             const updatedKeys = Object.keys(cache);
             for (const dataType of Object.keys(flatConfig)) {
-                const maxItems = dataTypeOverride ? getMaxItems(dataTypeOverride) : getMaxItems(dataType);
+                const maxItems = options.dataTypeOverride ? getMaxItems(options.dataTypeOverride) : getMaxItems(dataType);
                 const typedEntries = updatedKeys
                     .filter(k => cache[k] && cache[k].dataType === dataType)
                     .map(k => ({ key: k, lastAccessed: cache[k].lastAccessed, accessCount: cache[k].accessCount }));
-                
                 if (typedEntries.length > maxItems) {
-                    // Sort by: accessCount (ascending), then lastAccessed (ascending)
-                    // This removes least-used and oldest-accessed items first
                     typedEntries.sort((a, b) => {
                         if (a.accessCount !== b.accessCount) {
                             return a.accessCount - b.accessCount;
                         }
                         return a.lastAccessed - b.lastAccessed;
                     });
-                    
                     const toRemove = typedEntries.length - maxItems;
                     for (let i = 0; i < toRemove; i++) {
                         delete cache[typedEntries[i].key];
@@ -377,7 +375,6 @@ FEATURES:
                     }
                 }
             }
-            
             return removedCount;
         }
         function saveCache() {
@@ -426,7 +423,6 @@ FEATURES:
             }
             return null;
         }
-
         return {
             getCacheByKey, // Returns entry with .item, .metadata, .dataType, .accessCount, .lastAccessed
             getCacheWithMetadata, // Alias for getCacheByKey, returns full entry object

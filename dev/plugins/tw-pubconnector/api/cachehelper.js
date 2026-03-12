@@ -133,9 +133,9 @@ FEATURES:
             'cited-historical': { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         scholar: {
-            'author-profile': { ttl: 60 * 24 * 60 * 60 * 1000, maxItems: 5000 },
-            'author-works': { ttl: 7 * 24 * 60 * 60 * 1000, maxItems: 2000 },
-            metadata: { ttl: 180 * 24 * 60 * 60 * 1000, maxItems: 10000 }
+            // 30 days for author works
+            'author-works': { ttl: 30 * 24 * 60 * 60 * 1000, maxItems: 2000 }, 
+            metadata: { ttl: 365 * 24 * 60 * 60 * 1000, maxItems: 10000 }
         },
         orcid: {
             'daily-quota': { ttl: 2 * 24 * 60 * 60 * 1000, maxItems: 100 },

@@ -354,7 +354,7 @@ FEATURES:
                     removedCount.expired++;
                 }
             }
-            // Step 2: LRU eviction - keep as before
+            // Step 2: LRU eviction
             const updatedKeys = Object.keys(cache);
             for (const dataType of Object.keys(flatConfig)) {
                 const maxItems = options.dataTypeOverride ? getMaxItems(options.dataTypeOverride) : getMaxItems(dataType);

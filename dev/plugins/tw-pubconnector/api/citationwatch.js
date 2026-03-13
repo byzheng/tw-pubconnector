@@ -131,10 +131,7 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
             if (!isEnabled()) {
                 throw new Error("Citation Watch is disabled");
             }
-            // OpenCitations: Free, no API key required, provides direct citation data
-            if (options.platform === "opencitations") {
-                // return await opencitations.getLatestCitationsByDOI(doi, days);
-            } else if (options.platform === "openalex") {
+            if (options.platform === "openalex") {
                 return await openalex.getCitesByDOI(doi, days);
             }
             throw new Error(`Platform "${options.platform}" is not yet supported for citation watching`);

@@ -472,8 +472,7 @@ OpenAlex API utility for TiddlyWiki with timestamped caching
         }
 
         function removeExpiredEntries() {
-            const maxItems = Math.ceil(cacheHelper.getCaches().length / 10);
-            cacheHelper.removeExpiredEntries(maxItems);
+            cacheHelper.removeExpiredEntries();
         }
 
         function hasPendingRequests() {

@@ -112,6 +112,25 @@ Get literature article for a tiddler
 			}
 			document = utils.getArticle(document, siteConfig);
 
+			// Relax the CSP from the saved HTML so that injected scripts can call
+			// back to the TiddlyWiki server (connect-src, script-src, style-src).
+			document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]').forEach(function (el) {
+				el.parentNode.removeChild(el);
+			});
+			// Inject a permissive CSP that is still reasonably locked down.
+			const cspMeta = document.createElement('meta');
+			cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
+			cspMeta.setAttribute('content',
+				"default-src 'none'; " +
+				"script-src 'unsafe-inline'; " +
+				"style-src 'unsafe-inline'; " +
+				"img-src data: blob: *; " +
+				"font-src data: *; " +
+				"connect-src 'self';"
+			);
+			const head = document.querySelector('head') || document.documentElement;
+			head.insertBefore(cspMeta, head.firstChild);
+
 			// Inject script tag before </body>
 			const hightlightScript = document.createElement('script');
 			const scriptText = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/highlight.js", "");

@@ -347,6 +347,13 @@ Features:
 
         var textarea = document.createElement('textarea');
         textarea.placeholder = 'Add a note\u2026 (optional)';
+        textarea.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                var saveBtn = notePopup.querySelector('.tw-hl-btn-primary');
+                if (saveBtn) saveBtn.click();
+            }
+        });
         notePopup.appendChild(textarea);
 
         var footer = document.createElement('div');

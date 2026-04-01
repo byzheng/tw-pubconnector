@@ -112,34 +112,28 @@ Get literature article for a tiddler
 			}
 			document = utils.getArticle(document, siteConfig);
 
-			// // Inject script tag before </body>
-			// const hightlightScript = document.createElement('script');
-			// const scriptText = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/highlight.js", "");
+			// Inject script tag before </body>
+			const hightlightScript = document.createElement('script');
+			const scriptText = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/highlight.js", "");
 
 
-			// if (!scriptText) {
-			// 	response.writeHead(500, { "Content-Type": "text/plain" });
-			// 	response.end("Script content not found");
-			// 	console.log("Script content not found");
-			// 	return;
-			// }
-			// hightlightScript.textContent = scriptText.fields.text || "";
-			// document.body.appendChild(hightlightScript);
+			if (scriptText) {
+				hightlightScript.textContent = scriptText.fields.text || "";
+				document.body.appendChild(hightlightScript);
+			}
+			
 
-			// // Inject style tag before </body>
-			// const styleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
-			// if (!styleTiddler) {
-			// 	response.writeHead(500, { "Content-Type": "text/plain" });
-			// 	response.end("Style content not found");
-			// 	console.log("Style content not found");
-			// 	return;
-			// }
-			// const styleTag = document.createElement('style');
-			// styleTag.textContent = styleTiddler.fields.text || "";
-			// document.body.appendChild(styleTag);
+			// Inject style tag before </body>
+			const styleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
+			if (styleTiddler) {
+				const styleTag = document.createElement('style');
+				styleTag.textContent = styleTiddler.fields.text || "";
+				document.body.appendChild(styleTag);
+			}
+			
 
-			//const inject = `<script src="/files/inject.js"></script>`;
-			//const modifiedHtml = html.replace(/<\/body>/i, `${inject}</body>`);
+			// const inject = `<script src="/files/inject.js"></script>`;
+			// const modifiedHtml = html.replace(/<\/body>/i, `${inject}</body>`);
 			const modifiedHTML = dom.serialize();
 			response.writeHead(200, { "Content-Type": "text/html" });
 			response.end(modifiedHTML);

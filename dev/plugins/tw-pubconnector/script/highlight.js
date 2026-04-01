@@ -440,6 +440,20 @@ Features:
             renderNoteHtml(note, function (html) {
                 if (html) {
                     textEl.innerHTML = html;
+                    // Wire up any tiddlywiki-link elements in the rendered HTML
+                    textEl.querySelectorAll('a.tc-tiddlylink').forEach(function (a) {
+                        a.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            var href = a.getAttribute('href') || '';
+                            var title = href.startsWith('#') ? href.slice(1) : href;
+                            if (!title) return;
+                            title = decodeURIComponent(title);
+                            var bridge = window.twLiveBridge;
+                            if (bridge && bridge.openTiddler) {
+                                bridge.openTiddler(title);
+                            }
+                        });
+                    });
                 } else {
                     textEl.textContent = note;
                 }

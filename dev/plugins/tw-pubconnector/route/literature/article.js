@@ -126,7 +126,7 @@ Get literature article for a tiddler
 				"style-src 'unsafe-inline'; " +
 				"img-src data: blob: *; " +
 				"font-src data: *; " +
-				"connect-src 'self';"
+				"connect-src 'self' ws: wss:;"
 			);
 			const head = document.querySelector('head') || document.documentElement;
 			head.insertBefore(cspMeta, head.firstChild);
@@ -140,7 +140,7 @@ Get literature article for a tiddler
 				hightlightScript.textContent = scriptText.fields.text || "";
 				document.body.appendChild(hightlightScript);
 			}
-			
+
 
 			// Inject style tag before </body>
 			const styleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
@@ -148,6 +148,14 @@ Get literature article for a tiddler
 				const styleTag = document.createElement('style');
 				styleTag.textContent = styleTiddler.fields.text || "";
 				document.body.appendChild(styleTag);
+			}
+
+			// Inject livebridge WebSocket client
+			const livebridgeTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/livebridge.js");
+			if (livebridgeTiddler) {
+				const livebridgeScript = document.createElement('script');
+				livebridgeScript.textContent = livebridgeTiddler.fields.text || "";
+				document.body.appendChild(livebridgeScript);
 			}
 			
 

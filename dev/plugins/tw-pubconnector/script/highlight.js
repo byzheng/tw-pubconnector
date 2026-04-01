@@ -463,7 +463,7 @@ Features:
         document.body.addEventListener('mouseout', function (e) {
             var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
             if (!mark) return;
-            tooltipHideTimer = setTimeout(hideNoteTooltip, 120);
+            tooltipHideTimer = setTimeout(hideNoteTooltip, 1000);
         });
 
         // Keep tooltip open while mouse is inside it
@@ -471,7 +471,7 @@ Features:
             clearTimeout(tooltipHideTimer);
         });
         noteTooltip.addEventListener('mouseleave', function () {
-            tooltipHideTimer = setTimeout(hideNoteTooltip, 120);
+            tooltipHideTimer = setTimeout(hideNoteTooltip, 600);
         });
     }
 

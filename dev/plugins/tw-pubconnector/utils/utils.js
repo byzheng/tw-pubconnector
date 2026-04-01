@@ -77,6 +77,9 @@ function getArticle(document, siteConfig) {
     });
     
     if (Array.isArray(removeSelectors)) {
+        removeSelectors.appendChild(".tw-icon");
+        removeSelectors.appendChild(".tw-icon-tiny");
+        removeSelectors.appendChild(".tw-tag");
         removeSelectors.forEach(selector => {
             clones.forEach(clone => {
                 clone.querySelectorAll(selector).forEach(el => el.remove());

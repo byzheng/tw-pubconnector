@@ -29,6 +29,9 @@ Features:
 
     var API_BASE = '/literature/highlight';
 
+    // Characters of surrounding context stored with each anchor
+    var ANCHOR_CONTEXT = 64;
+
     // -----------------------------------------------------------------
     // State
     // -----------------------------------------------------------------
@@ -102,49 +105,104 @@ Features:
     }
 
     /**
-     * Convert a live Range to absolute character offsets within document.body.
-     * Works correctly even when <mark> elements are already present because
-     * getTextNodes visits text inside marks too (same total character count).
+     * Build a text-quote anchor from a live Range.
+     * Stores the exact selected text plus ANCHOR_CONTEXT chars of surrounding
+     * context. This is robust to DOM restructuring (e.g. getArticle changes)
+     * because restoration searches by content, not by position.
      */
-    function rangeToAbsolute(range) {
+    function textAnchorFromRange(range) {
         var nodes = getTextNodes(document.body);
-        var startAbs = -1, endAbs = -1, count = 0;
+        var buf = '', startPos = -1, endPos = -1;
         for (var i = 0; i < nodes.length; i++) {
             var n = nodes[i];
-            var len = n.textContent.length;
-            if (startAbs === -1 && n === range.startContainer) {
-                startAbs = count + range.startOffset;
+            if (startPos === -1 && n === range.startContainer) {
+                startPos = buf.length + range.startOffset;
             }
             if (n === range.endContainer) {
-                endAbs = count + range.endOffset;
+                endPos = buf.length + range.endOffset;
             }
-            if (startAbs !== -1 && endAbs !== -1) break;
-            count += len;
+            buf += n.textContent;
         }
-        return { start: startAbs, end: endAbs };
+        if (startPos === -1 || endPos === -1 || startPos >= endPos) return null;
+        return {
+            exact:  buf.slice(startPos, endPos),
+            prefix: buf.slice(Math.max(0, startPos - ANCHOR_CONTEXT), startPos),
+            suffix: buf.slice(endPos, endPos + ANCHOR_CONTEXT)
+        };
     }
 
     /**
-     * Convert stored absolute offsets back to a live Range.
-     * Must be called before any later highlight has been applied at a lower
-     * offset (i.e. restore highlights from END to START order).
+     * Restore a live Range from a text-quote anchor.
+     *
+     * Finds every occurrence of anchor.exact in the full text, then scores each
+     * candidate by how well the stored prefix and suffix match the surrounding
+     * context. The highest-scoring candidate wins, breaking ties by position
+     * (earlier first). This correctly handles duplicate phrases.
+     *
+     * Scoring: count of matching trailing chars in prefix + matching leading
+     * chars in suffix (simple but effective without requiring a diff library).
      */
-    function absoluteToRange(start, end) {
+    function rangeFromTextAnchor(anchor) {
         var nodes = getTextNodes(document.body);
-        var count = 0;
-        var sNode = null, sOff = 0, eNode = null, eOff = 0;
-        for (var i = 0; i < nodes.length; i++) {
-            var n = nodes[i];
-            var len = n.textContent.length;
-            if (!sNode && count + len > start) {
-                sNode = n;
-                sOff  = start - count;
+        var buf = '';
+        for (var i = 0; i < nodes.length; i++) buf += nodes[i].textContent;
+
+        var exact  = anchor.exact  || '';
+        var prefix = anchor.prefix || '';
+        var suffix = anchor.suffix || '';
+        if (!exact) return null;
+
+        // Collect all occurrence start positions
+        var candidates = [];
+        var search = 0;
+        while (true) {
+            var idx = buf.indexOf(exact, search);
+            if (idx === -1) break;
+            candidates.push(idx);
+            search = idx + 1;
+        }
+        if (candidates.length === 0) return null;
+
+        // Score each candidate: characters that match at the context boundary
+        function scoreCandidate(startPos) {
+            var score = 0;
+            // How many trailing chars of prefix match what's immediately before startPos
+            var actualPrefix = buf.slice(Math.max(0, startPos - prefix.length), startPos);
+            for (var k = 0; k < actualPrefix.length && k < prefix.length; k++) {
+                if (actualPrefix[actualPrefix.length - 1 - k] === prefix[prefix.length - 1 - k]) {
+                    score++;
+                } else {
+                    break; // stop at first mismatch (contiguous match from boundary)
+                }
             }
-            if (!eNode && count + len >= end) {
-                eNode = n;
-                eOff  = end - count;
-                break;
+            // How many leading chars of suffix match what's immediately after endPos
+            var endPos = startPos + exact.length;
+            var actualSuffix = buf.slice(endPos, endPos + suffix.length);
+            for (var m = 0; m < actualSuffix.length && m < suffix.length; m++) {
+                if (actualSuffix[m] === suffix[m]) {
+                    score++;
+                } else {
+                    break;
+                }
             }
+            return score;
+        }
+
+        var bestPos = candidates[0], bestScore = -1;
+        for (var c = 0; c < candidates.length; c++) {
+            var s = scoreCandidate(candidates[c]);
+            if (s > bestScore) { bestScore = s; bestPos = candidates[c]; }
+        }
+
+        var startPos = bestPos;
+        var endPos   = startPos + exact.length;
+
+        // Map absolute positions back to a DOM Range via text node walk
+        var count = 0, sNode = null, sOff = 0, eNode = null, eOff = 0;
+        for (var j = 0; j < nodes.length; j++) {
+            var nd = nodes[j], len = nd.textContent.length;
+            if (!sNode && count + len > startPos) { sNode = nd; sOff = startPos - count; }
+            if (!eNode && count + len >= endPos)   { eNode = nd; eOff = endPos   - count; break; }
             count += len;
         }
         if (!sNode || !eNode) return null;
@@ -156,6 +214,28 @@ Features:
             console.warn('[tw-highlight] range creation failed:', e);
             return null;
         }
+        return range;
+    }
+
+    /**
+     * Legacy: convert stored absolute offsets to a Range.
+     * Used only as a fallback for highlights saved in the old format.
+     */
+    function rangeFromAbsoluteOffsets(start, end) {
+        var nodes = getTextNodes(document.body);
+        var count = 0, sNode = null, sOff = 0, eNode = null, eOff = 0;
+        for (var i = 0; i < nodes.length; i++) {
+            var n = nodes[i], len = n.textContent.length;
+            if (!sNode && count + len > start)  { sNode = n; sOff = start - count; }
+            if (!eNode && count + len >= end)    { eNode = n; eOff = end   - count; break; }
+            count += len;
+        }
+        if (!sNode || !eNode) return null;
+        var range = document.createRange();
+        try {
+            range.setStart(sNode, Math.min(sOff, sNode.textContent.length));
+            range.setEnd(eNode,   Math.min(eOff, eNode.textContent.length));
+        } catch (e) { return null; }
         return range;
     }
 
@@ -189,7 +269,14 @@ Features:
 
     /** Wrap the given Range in a <mark> for highlight h, wiring the click handler. */
     function applyHighlightToDOM(h) {
-        var range = absoluteToRange(h.start, h.end);
+        var range;
+        if (h.anchor) {
+            // Current format: text-quote anchor
+            range = rangeFromTextAnchor(h.anchor);
+        } else if (typeof h.start === 'number' && typeof h.end === 'number') {
+            // Legacy format: absolute char offsets (backward compat)
+            range = rangeFromAbsoluteOffsets(h.start, h.end);
+        }
         if (!range) {
             console.warn('[tw-highlight] Cannot apply highlight:', h.id);
             return;
@@ -214,11 +301,10 @@ Features:
         });
     }
 
-    /** Apply all stored highlights, processing END → START to preserve offsets. */
+    /** Apply all stored highlights. Order is irrelevant with text-quote anchors. */
     function restoreHighlights() {
-        var sorted = highlights.slice().sort(function (a, b) { return b.start - a.start; });
-        for (var i = 0; i < sorted.length; i++) {
-            applyHighlightToDOM(sorted[i]);
+        for (var i = 0; i < highlights.length; i++) {
+            applyHighlightToDOM(highlights[i]);
         }
     }
 
@@ -600,21 +686,17 @@ Features:
     // -----------------------------------------------------------------
 
     function createHighlightFromRange(range, color, note) {
-        var abs = rangeToAbsolute(range);
-        if (abs.start === -1 || abs.end === -1 || abs.start >= abs.end) return;
+        var anchor = textAnchorFromRange(range);
+        if (!anchor) return;
 
         var h = {
-            id:    generateId(),
-            start: abs.start,
-            end:   abs.end,
-            text:  range.toString().trim(),
-            color: color,
-            note:  note || ''
+            id:     generateId(),
+            anchor: anchor,
+            color:  color,
+            note:   note || ''
         };
 
         highlights.push(h);
-        highlights.sort(function (a, b) { return a.start - b.start; });
-
         applyHighlightToDOM(h);
         saveHighlights();
         window.getSelection().removeAllRanges();

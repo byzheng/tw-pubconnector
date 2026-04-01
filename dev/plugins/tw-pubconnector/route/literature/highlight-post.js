@@ -68,22 +68,33 @@ Highlight object schema:
             return;
         }
 
-        // Sanitise each highlight entry
+        // Sanitise each highlight entry (supports both text-anchor and legacy offset formats)
         var sanitised = body
             .map(function (h) {
-                return {
+                var entry = {
                     id:    String(h.id    || "").slice(0, 64),
-                    start: parseInt(h.start, 10),
-                    end:   parseInt(h.end,   10),
-                    text:  String(h.text  || "").slice(0, 4000),
                     color: HEX_COLOR_RE.test(h.color) ? h.color : "#fef08a",
                     note:  String(h.note  || "").slice(0, 10000)
                 };
+                if (h.anchor && typeof h.anchor.exact === 'string') {
+                    // Current format: text-quote anchor
+                    entry.anchor = {
+                        exact:  String(h.anchor.exact  || "").slice(0, 10000),
+                        prefix: String(h.anchor.prefix || "").slice(0, 256),
+                        suffix: String(h.anchor.suffix || "").slice(0, 256)
+                    };
+                } else {
+                    // Legacy format: absolute char offsets
+                    entry.start = parseInt(h.start, 10);
+                    entry.end   = parseInt(h.end,   10);
+                    entry.text  = String(h.text || "").slice(0, 4000);
+                }
+                return entry;
             })
             .filter(function (h) {
-                return h.id &&
-                       !isNaN(h.start) && h.start >= 0 &&
-                       !isNaN(h.end)   && h.end > h.start;
+                if (!h.id) return false;
+                if (h.anchor) return h.anchor.exact.length > 0;
+                return !isNaN(h.start) && h.start >= 0 && !isNaN(h.end) && h.end > h.start;
             });
 
         var pathLiterature = ($tw.wiki.getTiddler("$:/config/tw-pubconnector/path/literature/html") || {}).fields &&

@@ -45,6 +45,7 @@ Features:
     var pendingRange     = null; // cloned Range of the current text selection
     var pendingCX        = 0;    // clientX from the mouseup that set pendingRange
     var pendingCY        = 0;    // clientY from the mouseup that set pendingRange
+    var renderCache      = {};   // {wikitext: renderedHtml}
 
     // -----------------------------------------------------------------
     // Tiddler name from URL
@@ -218,6 +219,32 @@ Features:
     // Server API
     // -----------------------------------------------------------------
 
+    /**
+     * Render wikitext via the server route, calling callback(html).
+     * Results are cached in memory so repeated hovers are instant.
+     */
+    function renderNoteHtml(text, callback) {
+        if (!text) { callback(''); return; }
+        if (renderCache[text] !== undefined) { callback(renderCache[text]); return; }
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/literature/highlight-render', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                try {
+                    var html = JSON.parse(xhr.responseText).html || '';
+                    renderCache[text] = html;
+                    callback(html);
+                    return;
+                } catch (e) {}
+            }
+            // Fallback: plain text — do NOT cache so it retries next hover
+            callback('');
+        };
+        xhr.onerror = function () { callback(''); };
+        xhr.send(JSON.stringify({ text: text }));
+    }
+
     function loadHighlights(callback) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API_BASE + '/' + encodeURIComponent(tiddlerName), true);
@@ -360,8 +387,13 @@ Features:
             '}',
             '#tw-hl-note-tooltip .tw-hl-nt-text{',
             ' font-size:18px;line-height:1.65;color:#1e293b;',
-            ' white-space:pre-wrap;word-break:break-word;',
-            '}'
+            ' word-break:break-word;',
+            '}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text p{margin:0 0 .6em}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text p:last-child{margin-bottom:0}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text a{color:#2563eb}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text code{background:#f1f5f9;border-radius:3px;padding:1px 4px;font-size:.9em}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text ul,#tw-hl-note-tooltip .tw-hl-nt-text ol{margin:.4em 0;padding-left:1.4em}'
         ].join('');
         var s = document.createElement('style');
         s.textContent = css;
@@ -394,12 +426,24 @@ Features:
             var note = mark.getAttribute('data-note');
             if (!note) return;
             clearTimeout(tooltipHideTimer);
+
+            var textEl = noteTooltip.querySelector('.tw-hl-nt-text');
             noteTooltip.style.borderLeftColor = mark.style.backgroundColor || '#fef08a';
-            noteTooltip.querySelector('.tw-hl-nt-text').textContent = note;
+
+            // Position and show immediately with a loading state
             var rect = mark.getBoundingClientRect();
             var top  = Math.max(8, Math.min(rect.top, window.innerHeight - 8));
             noteTooltip.style.top = top + 'px';
             noteTooltip.classList.add('visible');
+
+            // Render wikitext, then update content (instant if cached)
+            renderNoteHtml(note, function (html) {
+                if (html) {
+                    textEl.innerHTML = html;
+                } else {
+                    textEl.textContent = note;
+                }
+            });
         });
 
         document.body.addEventListener('mouseout', function (e) {

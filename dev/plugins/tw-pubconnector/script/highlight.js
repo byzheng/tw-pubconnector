@@ -29,17 +29,22 @@ Features:
 
     var API_BASE = '/literature/highlight';
 
+    // Characters of surrounding context stored with each anchor
+    var ANCHOR_CONTEXT = 64;
+
     // -----------------------------------------------------------------
     // State
     // -----------------------------------------------------------------
 
-    var highlights    = [];   // [{id, start, end, text, color, note}]
-    var toolbar       = null;
-    var notePopup     = null;
-    var noteColorRow  = null; // colour-swatch row inside notePopup
-    var pendingRange  = null; // cloned Range of the current text selection
-    var pendingCX     = 0;    // clientX from the mouseup that set pendingRange
-    var pendingCY     = 0;    // clientY from the mouseup that set pendingRange
+    var highlights       = [];   // [{id, anchor, color, note}]
+    var toolbar          = null;
+    var notePopup        = null;
+    var noteColorRow     = null; // colour-swatch row inside notePopup
+    var noteTooltip      = null; // hover note panel
+    var tooltipHideTimer = null;
+    var pendingRange     = null; // cloned Range of the current text selection
+    var pendingCX        = 0;    // clientX from the mouseup that set pendingRange
+    var pendingCY        = 0;    // clientY from the mouseup that set pendingRange
 
     // -----------------------------------------------------------------
     // Tiddler name from URL
@@ -61,7 +66,20 @@ Features:
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
 
-    /** Return all visible text nodes inside root, skipping SCRIPT/STYLE. */
+    /** Return true if node is inside an a.tw-icon or a.tw-icon-tiny element. */
+    function isInsideTwIcon(node) {
+        var el = node.parentElement;
+        while (el) {
+            if (el.tagName === 'A' &&
+                (el.classList.contains('tw-icon') || el.classList.contains('tw-icon-tiny'))) {
+                return true;
+            }
+            el = el.parentElement;
+        }
+        return false;
+    }
+
+    /** Return all visible text nodes inside root, skipping SCRIPT/STYLE and a.tw-icon / a.tw-icon-tiny. */
     function getTextNodes(root) {
         var nodes = [];
         var walker = document.createTreeWalker(
@@ -72,6 +90,9 @@ Features:
                     var tag = node.parentElement && node.parentElement.tagName;
                     if (tag === 'SCRIPT' || tag === 'STYLE') {
                         return NodeFilter.FILTER_REJECT;
+                    }
+                    if (isInsideTwIcon(node)) {
+                        return NodeFilter.FILTER_SKIP;
                     }
                     return NodeFilter.FILTER_ACCEPT;
                 }
@@ -85,49 +106,100 @@ Features:
     }
 
     /**
-     * Convert a live Range to absolute character offsets within document.body.
-     * Works correctly even when <mark> elements are already present because
-     * getTextNodes visits text inside marks too (same total character count).
+     * Build a text-quote anchor from a live Range.
+     * Stores the exact selected text plus ANCHOR_CONTEXT chars of surrounding
+     * context. Robust to DOM restructuring because restoration searches by
+     * content, not by position.
      */
-    function rangeToAbsolute(range) {
+    function textAnchorFromRange(range) {
         var nodes = getTextNodes(document.body);
-        var startAbs = -1, endAbs = -1, count = 0;
+        var buf = '', startPos = -1, endPos = -1;
         for (var i = 0; i < nodes.length; i++) {
             var n = nodes[i];
-            var len = n.textContent.length;
-            if (startAbs === -1 && n === range.startContainer) {
-                startAbs = count + range.startOffset;
+            if (startPos === -1 && n === range.startContainer) {
+                startPos = buf.length + range.startOffset;
             }
             if (n === range.endContainer) {
-                endAbs = count + range.endOffset;
+                endPos = buf.length + range.endOffset;
             }
-            if (startAbs !== -1 && endAbs !== -1) break;
-            count += len;
+            buf += n.textContent;
         }
-        return { start: startAbs, end: endAbs };
+        if (startPos === -1 || endPos === -1 || startPos >= endPos) return null;
+        return {
+            exact:  buf.slice(startPos, endPos),
+            prefix: buf.slice(Math.max(0, startPos - ANCHOR_CONTEXT), startPos),
+            suffix: buf.slice(endPos, endPos + ANCHOR_CONTEXT)
+        };
     }
 
     /**
-     * Convert stored absolute offsets back to a live Range.
-     * Must be called before any later highlight has been applied at a lower
-     * offset (i.e. restore highlights from END to START order).
+     * Restore a live Range from a text-quote anchor.
+     *
+     * Finds every occurrence of anchor.exact in the full text, then scores each
+     * candidate by how well the stored prefix and suffix match the surrounding
+     * context. The highest-scoring candidate wins. Handles duplicate phrases.
      */
-    function absoluteToRange(start, end) {
+    function rangeFromTextAnchor(anchor) {
         var nodes = getTextNodes(document.body);
-        var count = 0;
-        var sNode = null, sOff = 0, eNode = null, eOff = 0;
-        for (var i = 0; i < nodes.length; i++) {
-            var n = nodes[i];
-            var len = n.textContent.length;
-            if (!sNode && count + len > start) {
-                sNode = n;
-                sOff  = start - count;
+        var buf = '';
+        for (var i = 0; i < nodes.length; i++) buf += nodes[i].textContent;
+
+        var exact  = anchor.exact  || '';
+        var prefix = anchor.prefix || '';
+        var suffix = anchor.suffix || '';
+        if (!exact) return null;
+
+        // Collect all occurrence start positions
+        var candidates = [];
+        var search = 0;
+        while (true) {
+            var idx = buf.indexOf(exact, search);
+            if (idx === -1) break;
+            candidates.push(idx);
+            search = idx + 1;
+        }
+        if (candidates.length === 0) return null;
+
+        function scoreCandidate(startPos) {
+            var score = 0;
+            var actualPrefix = buf.slice(Math.max(0, startPos - prefix.length), startPos);
+            for (var k = 0; k < actualPrefix.length && k < prefix.length; k++) {
+                if (actualPrefix[actualPrefix.length - 1 - k] === prefix[prefix.length - 1 - k]) { score++; }
+                else { break; }
             }
-            if (!eNode && count + len >= end) {
-                eNode = n;
-                eOff  = end - count;
-                break;
+            var endPos = startPos + exact.length;
+            var actualSuffix = buf.slice(endPos, endPos + suffix.length);
+            for (var m = 0; m < actualSuffix.length && m < suffix.length; m++) {
+                if (actualSuffix[m] === suffix[m]) { score++; }
+                else { break; }
             }
+            return score;
+        }
+
+        var bestPos = candidates[0], bestScore = -1;
+        for (var c = 0; c < candidates.length; c++) {
+            var s = scoreCandidate(candidates[c]);
+            if (s > bestScore) { bestScore = s; bestPos = candidates[c]; }
+        }
+
+        return absToRange(bestPos, bestPos + exact.length, nodes);
+    }
+
+    /**
+     * Legacy: convert stored absolute offsets to a Range.
+     * Used only as fallback for highlights saved in the old format.
+     */
+    function rangeFromAbsoluteOffsets(start, end) {
+        return absToRange(start, end, getTextNodes(document.body));
+    }
+
+    /** Internal: map [startPos, endPos) in concatenated text to a DOM Range. */
+    function absToRange(startPos, endPos, nodes) {
+        var count = 0, sNode = null, sOff = 0, eNode = null, eOff = 0;
+        for (var j = 0; j < nodes.length; j++) {
+            var nd = nodes[j], len = nd.textContent.length;
+            if (!sNode && count + len > startPos)  { sNode = nd; sOff = startPos - count; }
+            if (!eNode && count + len >= endPos)    { eNode = nd; eOff = endPos   - count; break; }
             count += len;
         }
         if (!sNode || !eNode) return null;
@@ -172,7 +244,13 @@ Features:
 
     /** Wrap the given Range in a <mark> for highlight h, wiring the click handler. */
     function applyHighlightToDOM(h) {
-        var range = absoluteToRange(h.start, h.end);
+        var range;
+        if (h.anchor) {
+            range = rangeFromTextAnchor(h.anchor);
+        } else if (typeof h.start === 'number' && typeof h.end === 'number') {
+            // Legacy format: absolute char offsets
+            range = rangeFromAbsoluteOffsets(h.start, h.end);
+        }
         if (!range) {
             console.warn('[tw-highlight] Cannot apply highlight:', h.id);
             return;
@@ -181,7 +259,7 @@ Features:
         mark.style.backgroundColor = h.color;
         mark.style.cursor = 'pointer';
         mark.setAttribute('data-highlight-id', h.id);
-        if (h.note) mark.setAttribute('title', h.note);
+        if (h.note) mark.setAttribute('data-note', h.note);
 
         try {
             mark.appendChild(range.extractContents());
@@ -197,11 +275,10 @@ Features:
         });
     }
 
-    /** Apply all stored highlights, processing END → START to preserve offsets. */
+    /** Apply all stored highlights. Order is irrelevant with text-quote anchors. */
     function restoreHighlights() {
-        var sorted = highlights.slice().sort(function (a, b) { return b.start - a.start; });
-        for (var i = 0; i < sorted.length; i++) {
-            applyHighlightToDOM(sorted[i]);
+        for (var i = 0; i < highlights.length; i++) {
+            applyHighlightToDOM(highlights[i]);
         }
     }
 
@@ -224,36 +301,36 @@ Features:
     function injectStyles() {
         var css = [
             '#tw-hl-toolbar{',
-            ' position:fixed;background:#1e293b;border-radius:10px;',
+            ' position:fixed;background:#fff;border-radius:10px;',
             ' padding:6px 10px;display:flex;gap:7px;align-items:center;',
-            ' box-shadow:0 4px 18px rgba(0,0,0,.45);z-index:2147483646;',
-            ' user-select:none;pointer-events:all;',
+            ' box-shadow:0 4px 18px rgba(0,0,0,.18);z-index:2147483646;',
+            ' border:1px solid #e2e8f0;user-select:none;pointer-events:all;',
             '}',
             '.tw-hl-swatch{',
             ' width:22px;height:22px;border-radius:50%;border:2px solid transparent;',
             ' cursor:pointer;transition:transform .12s,border-color .12s;flex-shrink:0;background:none;padding:0;',
             '}',
-            '.tw-hl-swatch:hover{transform:scale(1.25);border-color:#fff}',
-            '.tw-hl-swatch.active{border-color:#fff;box-shadow:0 0 0 2px #3b82f6}',
+            '.tw-hl-swatch:hover{transform:scale(1.25);border-color:#64748b}',
+            '.tw-hl-swatch.active{border-color:#64748b;box-shadow:0 0 0 2px #3b82f6}',
             '.tw-hl-icon-btn{',
-            ' background:none;border:none;color:#e2e8f0;cursor:pointer;',
-            ' font-size:15px;padding:0 4px;line-height:1;opacity:.8;',
+            ' background:none;border:none;color:#475569;cursor:pointer;',
+            ' font-size:15px;padding:0 4px;line-height:1;opacity:.7;',
             '}',
-            '.tw-hl-icon-btn:hover{opacity:1}',
-            '.tw-hl-sep{width:1px;height:18px;background:#475569;flex-shrink:0}',
+            '.tw-hl-icon-btn:hover{opacity:1;color:#1e293b}',
+            '.tw-hl-sep{width:1px;height:18px;background:#cbd5e1;flex-shrink:0}',
             '#tw-hl-note-popup{',
-            ' position:fixed;background:#1e293b;border-radius:10px;padding:12px;',
-            ' box-shadow:0 4px 18px rgba(0,0,0,.45);z-index:2147483647;',
-            ' display:flex;flex-direction:column;gap:9px;min-width:260px;',
-            ' pointer-events:all;',
+            ' position:fixed;background:#fff;border-radius:10px;padding:12px;',
+            ' box-shadow:0 4px 18px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
+            ' z-index:2147483647;display:flex;flex-direction:column;gap:9px;',
+            ' min-width:260px;pointer-events:all;',
             '}',
             '#tw-hl-note-popup textarea{',
             ' width:100%;box-sizing:border-box;height:78px;border-radius:6px;',
-            ' border:1px solid #475569;background:#0f172a;color:#e2e8f0;',
+            ' border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;',
             ' padding:7px;font-size:13px;resize:vertical;outline:none;font-family:inherit;',
             '}',
-            '#tw-hl-note-popup textarea:focus{border-color:#3b82f6}',
-            '#tw-hl-note-popup textarea::placeholder{color:#64748b}',
+            '#tw-hl-note-popup textarea:focus{border-color:#3b82f6;background:#fff}',
+            '#tw-hl-note-popup textarea::placeholder{color:#94a3b8}',
             '.tw-hl-popup-footer{display:flex;justify-content:flex-end;gap:6px;align-items:center}',
             '.tw-hl-btn{',
             ' border:none;border-radius:5px;padding:4px 14px;',
@@ -263,14 +340,77 @@ Features:
             '.tw-hl-btn-primary:hover{background:#2563eb}',
             '.tw-hl-btn-danger{background:#ef4444;color:#fff}',
             '.tw-hl-btn-danger:hover{background:#dc2626}',
-            '.tw-hl-btn-ghost{background:#334155;color:#e2e8f0}',
-            '.tw-hl-btn-ghost:hover{background:#475569}',
+            '.tw-hl-btn-ghost{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}',
+            '.tw-hl-btn-ghost:hover{background:#e2e8f0}',
             '.tw-hl-color-row{display:flex;gap:6px;align-items:center}',
-            '.tw-hl-popup-label{font-size:11px;color:#94a3b8;letter-spacing:.04em}'
+            '.tw-hl-popup-label{font-size:11px;color:#64748b;letter-spacing:.04em}',
+            /* --- hover note panel --- */
+            '#tw-hl-note-tooltip{',
+            ' position:fixed;right:24px;max-width:320px;min-width:220px;',
+            ' background:#fff;border-radius:12px;padding:18px 20px;',
+            ' box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
+            ' z-index:2147483645;pointer-events:none;border-left:5px solid #fef08a;',
+            ' opacity:0;transform:translateX(14px);',
+            ' transition:opacity .18s ease,transform .18s ease;',
+            '}',
+            '#tw-hl-note-tooltip.visible{opacity:1;transform:translateX(0)}',
+            '#tw-hl-note-tooltip .tw-hl-nt-label{',
+            ' font-size:11px;font-weight:700;letter-spacing:.08em;color:#64748b;',
+            ' margin-bottom:10px;text-transform:uppercase;',
+            '}',
+            '#tw-hl-note-tooltip .tw-hl-nt-text{',
+            ' font-size:18px;line-height:1.65;color:#1e293b;',
+            ' white-space:pre-wrap;word-break:break-word;',
+            '}'
         ].join('');
         var s = document.createElement('style');
         s.textContent = css;
         document.head.appendChild(s);
+    }
+
+    // -----------------------------------------------------------------
+    // Hover note panel (right side of page)
+    // -----------------------------------------------------------------
+
+    function buildNoteTooltip() {
+        noteTooltip = document.createElement('div');
+        noteTooltip.id = 'tw-hl-note-tooltip';
+
+        var labelEl = document.createElement('div');
+        labelEl.className = 'tw-hl-nt-label';
+        labelEl.textContent = 'Note';
+        noteTooltip.appendChild(labelEl);
+
+        var textEl = document.createElement('div');
+        textEl.className = 'tw-hl-nt-text';
+        noteTooltip.appendChild(textEl);
+
+        document.body.appendChild(noteTooltip);
+
+        // Event delegation: show when hovering a mark that has a note
+        document.body.addEventListener('mouseover', function (e) {
+            var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
+            if (!mark) return;
+            var note = mark.getAttribute('data-note');
+            if (!note) return;
+            clearTimeout(tooltipHideTimer);
+            noteTooltip.style.borderLeftColor = mark.style.backgroundColor || '#fef08a';
+            noteTooltip.querySelector('.tw-hl-nt-text').textContent = note;
+            var rect = mark.getBoundingClientRect();
+            var top  = Math.max(8, Math.min(rect.top, window.innerHeight - 8));
+            noteTooltip.style.top = top + 'px';
+            noteTooltip.classList.add('visible');
+        });
+
+        document.body.addEventListener('mouseout', function (e) {
+            var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
+            if (!mark) return;
+            tooltipHideTimer = setTimeout(hideNoteTooltip, 120);
+        });
+    }
+
+    function hideNoteTooltip() {
+        if (noteTooltip) noteTooltip.classList.remove('visible');
     }
 
     // -----------------------------------------------------------------
@@ -347,6 +487,13 @@ Features:
 
         var textarea = document.createElement('textarea');
         textarea.placeholder = 'Add a note\u2026 (optional)';
+        textarea.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                var saveBtn = notePopup.querySelector('.tw-hl-btn-primary');
+                if (saveBtn) saveBtn.click();
+            }
+        });
         notePopup.appendChild(textarea);
 
         var footer = document.createElement('div');
@@ -471,9 +618,10 @@ Features:
             h.note  = notePopup.querySelector('textarea').value.trim();
             markEl.style.backgroundColor = h.color;
             if (h.note) {
-                markEl.setAttribute('title', h.note);
+                markEl.setAttribute('data-note', h.note);
             } else {
-                markEl.removeAttribute('title');
+                markEl.removeAttribute('data-note');
+                hideNoteTooltip();
             }
             saveHighlights();
             notePopup.style.display = 'none';
@@ -512,21 +660,17 @@ Features:
     // -----------------------------------------------------------------
 
     function createHighlightFromRange(range, color, note) {
-        var abs = rangeToAbsolute(range);
-        if (abs.start === -1 || abs.end === -1 || abs.start >= abs.end) return;
+        var anchor = textAnchorFromRange(range);
+        if (!anchor) return;
 
         var h = {
-            id:    generateId(),
-            start: abs.start,
-            end:   abs.end,
-            text:  range.toString().trim(),
-            color: color,
-            note:  note || ''
+            id:     generateId(),
+            anchor: anchor,
+            color:  color,
+            note:   note || ''
         };
 
         highlights.push(h);
-        highlights.sort(function (a, b) { return a.start - b.start; });
-
         applyHighlightToDOM(h);
         saveHighlights();
         window.getSelection().removeAllRanges();
@@ -571,6 +715,7 @@ Features:
         injectStyles();
         buildToolbar();
         buildNotePopup();
+        buildNoteTooltip();
         loadHighlights(function (data) {
             highlights = Array.isArray(data) ? data : [];
             restoreHighlights();

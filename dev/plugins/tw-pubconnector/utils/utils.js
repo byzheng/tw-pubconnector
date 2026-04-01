@@ -91,6 +91,16 @@ function getArticle(document, siteConfig) {
     clones.forEach(clone => {
         document.body.appendChild(clone);
     });
+
+    if (url.includes('sciencedirect.com')) {
+        document.querySelectorAll('article.col-md-16').forEach(el => {
+            el.classList.remove('col-md-16');
+        });
+        document.querySelectorAll('article.col-lg-12').forEach(el => {
+            el.classList.remove('col-lg-12');
+        });
+    }
+
     return document
 
 }

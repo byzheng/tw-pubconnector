@@ -5,3 +5,4 @@ cache/
 dev/tiddlers/$__config*
 /dev/files
 dev/tiddlers/$__StoryList*.tid
+/dev/tiddlers/*_*_[0-9][0-9][0-9][0-9]*

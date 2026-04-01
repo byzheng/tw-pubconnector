@@ -376,7 +376,7 @@ Features:
             ' position:fixed;right:24px;max-width:320px;min-width:220px;',
             ' background:#fff;border-radius:12px;padding:18px 20px;',
             ' box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
-            ' z-index:2147483645;pointer-events:none;border-left:5px solid #fef08a;',
+            ' z-index:2147483645;pointer-events:auto;border-left:5px solid #fef08a;',
             ' opacity:0;transform:translateX(14px);',
             ' transition:opacity .18s ease,transform .18s ease;',
             '}',
@@ -449,6 +449,14 @@ Features:
         document.body.addEventListener('mouseout', function (e) {
             var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
             if (!mark) return;
+            tooltipHideTimer = setTimeout(hideNoteTooltip, 120);
+        });
+
+        // Keep tooltip open while mouse is inside it
+        noteTooltip.addEventListener('mouseenter', function () {
+            clearTimeout(tooltipHideTimer);
+        });
+        noteTooltip.addEventListener('mouseleave', function () {
             tooltipHideTimer = setTimeout(hideNoteTooltip, 120);
         });
     }

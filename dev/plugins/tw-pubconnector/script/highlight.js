@@ -20,11 +20,11 @@ Features:
     // -----------------------------------------------------------------
 
     var COLORS = [
-        { name: 'Yellow', value: '#fef08a' },
-        { name: 'Green',  value: '#bbf7d0' },
-        { name: 'Blue',   value: '#bae6fd' },
-        { name: 'Pink',   value: '#fecdd3' },
-        { name: 'Orange', value: '#fed7aa' }
+        { name: 'Note',      value: '#fef08a' },
+        { name: 'Evidence',  value: '#bbf7d0' },
+        { name: 'Idea',      value: '#bae6fd' },
+        { name: 'Critique',  value: '#fecdd3' },
+        { name: 'Action',    value: '#fed7aa' }
     ];
 
     var API_BASE = '/literature/highlight';
@@ -69,6 +69,15 @@ Features:
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
 
+    function getColorName(colorValue) {
+        for (var i = 0; i < COLORS.length; i++) {
+            if (COLORS[i].value === colorValue) {
+                return COLORS[i].name;
+            }
+        }
+        return 'Note';
+    }
+
     function getArticleRoots() {
         return Array.prototype.filter.call(document.body.children, function (el) {
             if (!el || !el.tagName) return false;
@@ -93,19 +102,13 @@ Features:
 
     function loadFontScale() {
         try {
-            var stored = window.localStorage.getItem('tw-hl-font-scale');
-            var value = stored ? parseFloat(stored) : 1;
-            if (!isNaN(value) && value >= 0.7 && value <= 2) {
-                return value;
-            }
+            window.localStorage.removeItem('tw-hl-font-scale');
         } catch (e) {}
         return 1;
     }
 
     function saveFontScale() {
-        try {
-            window.localStorage.setItem('tw-hl-font-scale', String(fontScale));
-        } catch (e) {}
+        return;
     }
 
     function applyFontScale() {
@@ -374,6 +377,7 @@ Features:
         mark.style.backgroundColor = h.color;
         mark.style.cursor = 'pointer';
         mark.setAttribute('data-highlight-id', h.id);
+        mark.setAttribute('data-category', getColorName(h.color));
         if (h.note) mark.setAttribute('data-note', h.note);
 
         try {
@@ -458,6 +462,8 @@ Features:
             '.tw-hl-btn-ghost{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}',
             '.tw-hl-btn-ghost:hover{background:#e2e8f0}',
             '.tw-hl-color-row{display:flex;gap:6px;align-items:center}',
+            '.tw-hl-color-option{display:flex;flex-direction:column;align-items:center;gap:4px}',
+            '.tw-hl-color-name{font-size:11px;color:#64748b;line-height:1.2;text-align:center;max-width:64px}',
             '.tw-hl-popup-label{font-size:11px;color:#64748b;letter-spacing:.04em}',
             /* --- hover note panel --- */
             '#tw-hl-note-tooltip{',
@@ -565,11 +571,16 @@ Features:
             var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
             if (!mark) return;
             var note = mark.getAttribute('data-note');
+            var category = mark.getAttribute('data-category') || getColorName(mark.style.backgroundColor);
             if (!note) return;
             clearTimeout(tooltipHideTimer);
 
             var textEl = noteTooltip.querySelector('.tw-hl-nt-text');
+            var labelEl = noteTooltip.querySelector('.tw-hl-nt-label');
             noteTooltip.style.borderLeftColor = mark.style.backgroundColor || '#fef08a';
+            if (labelEl) {
+                labelEl.textContent = category || 'Note';
+            }
 
             // Position and show immediately with a loading state
             var rect = mark.getBoundingClientRect();
@@ -734,6 +745,9 @@ Features:
         noteColorRow.className = 'tw-hl-color-row';
 
         COLORS.forEach(function (c) {
+            var option = document.createElement('div');
+            option.className = 'tw-hl-color-option';
+
             var btn = document.createElement('button');
             btn.className = 'tw-hl-swatch' + (c.value === (currentColor || COLORS[0].value) ? ' active' : '');
             btn.style.backgroundColor = c.value;
@@ -746,7 +760,14 @@ Features:
                 });
                 btn.classList.add('active');
             });
-            noteColorRow.appendChild(btn);
+
+            var name = document.createElement('div');
+            name.className = 'tw-hl-color-name';
+            name.textContent = c.name;
+
+            option.appendChild(btn);
+            option.appendChild(name);
+            noteColorRow.appendChild(option);
         });
 
         // Insert after the "COLOUR" label (first child)
@@ -824,6 +845,7 @@ Features:
             h.color = getSelectedColor();
             h.note  = notePopup.querySelector('textarea').value.trim();
             markEl.style.backgroundColor = h.color;
+            markEl.setAttribute('data-category', getColorName(h.color));
             if (h.note) {
                 markEl.setAttribute('data-note', h.note);
             } else {

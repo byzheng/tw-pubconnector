@@ -131,7 +131,16 @@ Highlight notes widget for TiddlyWiki
         return button;
     }
 
-    function createExcerpt(anchor, fallbackText, accentColor) {
+    function createExcerptLink(tiddlerTitle, highlightId) {
+        var link = document.createElement("a");
+        link.href = "/literature/article/" + encodeURIComponent(tiddlerTitle) + "#hl-" + encodeURIComponent(highlightId);
+        link.target = "_blank";
+        link.textContent = " open";
+        link.style.fontSize = "0.8rem";
+        return link;
+    }
+
+    function createExcerpt(anchor, fallbackText, accentColor, tiddlerTitle, highlightId) {
         var excerpt = document.createElement("div");
         excerpt.style.display = "grid";
         excerpt.style.gap = "4px";
@@ -166,11 +175,15 @@ Highlight notes widget for TiddlyWiki
         var suffix = document.createTextNode(normalizeExcerptText(anchor.suffix) + "...");
         content.appendChild(suffix);
 
+        if (tiddlerTitle && highlightId) {
+            content.appendChild(createExcerptLink(tiddlerTitle, highlightId));
+        }
+
         excerpt.appendChild(content);
         return excerpt;
     }
 
-    function createNoteCard(noteItem) {
+    function createNoteCard(noteItem, tiddlerTitle) {
         var colorInfo = getColorInfo(noteItem.color);
         var anchor = noteItem.anchor || {};
 
@@ -207,7 +220,7 @@ Highlight notes widget for TiddlyWiki
         if (noteItem.note) {
             card.appendChild(createNoteBox(noteItem.note));
         }
-        card.appendChild(createExcerpt(anchor, noteItem.text || "", colorInfo.value));
+        card.appendChild(createExcerpt(anchor, noteItem.text || "", colorInfo.value, tiddlerTitle, noteItem.id));
 
         return card;
     }
@@ -265,7 +278,7 @@ Highlight notes widget for TiddlyWiki
                 }
 
                 for (var i = 0; i < items.length; i++) {
-                    listDom.appendChild(createNoteCard(items[i]));
+                    listDom.appendChild(createNoteCard(items[i], tiddlerTitle));
                 }
             })
             .catch(function (err) {

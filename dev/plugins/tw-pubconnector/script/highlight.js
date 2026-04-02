@@ -439,6 +439,31 @@ Features:
         }
     }
 
+    function getHashHighlightId() {
+        var hash = window.location.hash || '';
+        var match = hash.match(/^#hl-(.+)$/);
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function focusHighlightFromHash() {
+        var highlightId = getHashHighlightId();
+        if (!highlightId) return;
+
+        var selector = 'mark[data-highlight-id="' + highlightId.replace(/"/g, '\\"') + '"]';
+        var mark = document.querySelector(selector);
+        if (!mark) return;
+
+        mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var previousOutline = mark.style.outline;
+        var previousOutlineOffset = mark.style.outlineOffset;
+        mark.style.outline = '2px solid #2563eb';
+        mark.style.outlineOffset = '2px';
+        window.setTimeout(function () {
+            mark.style.outline = previousOutline;
+            mark.style.outlineOffset = previousOutlineOffset;
+        }, 2000);
+    }
+
     /** Remove highlight from the highlights array and unwrap its <mark> node. */
     function removeHighlight(id, markEl) {
         highlights = highlights.filter(function (h) { return h.id !== id; });
@@ -991,7 +1016,10 @@ Features:
                 saveHighlights();
             }
             restoreHighlights();
+            focusHighlightFromHash();
         });
+
+        window.addEventListener('hashchange', focusHighlightFromHash);
     }
 
     if (document.readyState === 'loading') {

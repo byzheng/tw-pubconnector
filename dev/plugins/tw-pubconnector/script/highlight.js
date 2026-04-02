@@ -41,11 +41,13 @@ Features:
     var notePopup        = null;
     var noteColorRow     = null; // colour-swatch row inside notePopup
     var noteTooltip      = null; // hover note panel
+    var fontControls     = null; // floating article font-size control
     var tooltipHideTimer = null;
     var pendingRange     = null; // cloned Range of the current text selection
     var pendingCX        = 0;    // clientX from the mouseup that set pendingRange
     var pendingCY        = 0;    // clientY from the mouseup that set pendingRange
     var renderCache      = {};   // {wikitext: renderedHtml}
+    var fontScale        = 1;
 
     // -----------------------------------------------------------------
     // Tiddler name from URL
@@ -65,6 +67,92 @@ Features:
 
     function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function getArticleRoots() {
+        return Array.prototype.filter.call(document.body.children, function (el) {
+            if (!el || !el.tagName) return false;
+            if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
+            return el.id !== 'tw-hl-toolbar' &&
+                   el.id !== 'tw-hl-note-popup' &&
+                   el.id !== 'tw-hl-note-tooltip' &&
+                   el.id !== 'tw-hl-font-controls';
+        });
+    }
+
+    function getArticleElements() {
+        var elements = [];
+        getArticleRoots().forEach(function (root) {
+            elements.push(root);
+            Array.prototype.forEach.call(root.querySelectorAll('*'), function (el) {
+                elements.push(el);
+            });
+        });
+        return elements;
+    }
+
+    function loadFontScale() {
+        try {
+            var stored = window.localStorage.getItem('tw-hl-font-scale');
+            var value = stored ? parseFloat(stored) : 1;
+            if (!isNaN(value) && value >= 0.7 && value <= 2) {
+                return value;
+            }
+        } catch (e) {}
+        return 1;
+    }
+
+    function saveFontScale() {
+        try {
+            window.localStorage.setItem('tw-hl-font-scale', String(fontScale));
+        } catch (e) {}
+    }
+
+    function applyFontScale() {
+        getArticleElements().forEach(function (el) {
+            var computed = window.getComputedStyle(el);
+            var originalFontSize = el.getAttribute('data-tw-hl-font-size');
+            var originalLineHeight = el.getAttribute('data-tw-hl-line-height');
+
+            if (!originalFontSize) {
+                originalFontSize = computed.fontSize;
+                el.setAttribute('data-tw-hl-font-size', originalFontSize);
+            }
+            if (!originalLineHeight) {
+                originalLineHeight = computed.lineHeight;
+                el.setAttribute('data-tw-hl-line-height', originalLineHeight);
+            }
+
+            var originalFontPx = parseFloat(originalFontSize);
+            if (!isNaN(originalFontPx)) {
+                el.style.fontSize = (Math.round(originalFontPx * fontScale * 10) / 10) + 'px';
+            }
+
+            var originalLinePx = parseFloat(originalLineHeight);
+            if (!isNaN(originalLinePx)) {
+                el.style.lineHeight = (Math.round(originalLinePx * fontScale * 10) / 10) + 'px';
+            } else if (originalLineHeight === 'normal' && !isNaN(originalFontPx)) {
+                el.style.lineHeight = (Math.round(originalFontPx * 1.4 * fontScale * 10) / 10) + 'px';
+            }
+        });
+        if (fontControls) {
+            var label = fontControls.querySelector('.tw-hl-font-reset');
+            if (label) {
+                label.textContent = Math.round(fontScale * 100) + '%';
+            }
+        }
+    }
+
+    function changeFontScale(delta) {
+        fontScale = Math.max(0.7, Math.min(2, Math.round((fontScale + delta) * 10) / 10));
+        saveFontScale();
+        applyFontScale();
+    }
+
+    function resetFontScale() {
+        fontScale = 1;
+        saveFontScale();
+        applyFontScale();
     }
 
     /** Return true if node is inside an a.tw-icon or a.tw-icon-tiny element. */
@@ -393,11 +481,64 @@ Features:
             '#tw-hl-note-tooltip .tw-hl-nt-text p:last-child{margin-bottom:0}',
             '#tw-hl-note-tooltip .tw-hl-nt-text a{color:#2563eb}',
             '#tw-hl-note-tooltip .tw-hl-nt-text code{background:#f1f5f9;border-radius:3px;padding:1px 4px;font-size:.9em}',
-            '#tw-hl-note-tooltip .tw-hl-nt-text ul,#tw-hl-note-tooltip .tw-hl-nt-text ol{margin:.4em 0;padding-left:1.4em}'
+            '#tw-hl-note-tooltip .tw-hl-nt-text ul,#tw-hl-note-tooltip .tw-hl-nt-text ol{margin:.4em 0;padding-left:1.4em}',
+            '#tw-hl-font-controls{',
+            ' position:fixed;right:24px;bottom:24px;display:flex;align-items:center;gap:8px;',
+            ' background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;',
+            ' box-shadow:0 8px 24px rgba(0,0,0,.16);z-index:2147483644;',
+            '}',
+            '#tw-hl-font-controls button{',
+            ' border:none;background:#f1f5f9;color:#1e293b;border-radius:8px;cursor:pointer;',
+            ' width:34px;height:34px;font-size:16px;font-weight:700;',
+            '}',
+            '#tw-hl-font-controls button:hover{background:#e2e8f0}',
+            '#tw-hl-font-controls .tw-hl-font-reset{',
+            ' min-width:56px;height:34px;padding:0 10px;background:#fff;border:1px solid #e2e8f0;',
+            ' text-align:center;font-size:12px;font-weight:700;color:#475569;letter-spacing:.03em;',
+            '}',
+            '#tw-hl-font-controls .tw-hl-font-reset:hover{background:#f8fafc}'
         ].join('');
         var s = document.createElement('style');
         s.textContent = css;
         document.head.appendChild(s);
+    }
+
+    function buildFontControls() {
+        fontControls = document.createElement('div');
+        fontControls.id = 'tw-hl-font-controls';
+
+        var smallerBtn = document.createElement('button');
+        smallerBtn.type = 'button';
+        smallerBtn.textContent = 'A-';
+        smallerBtn.title = 'Smaller article font';
+        smallerBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            changeFontScale(-0.1);
+        });
+
+        var resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'tw-hl-font-reset';
+        resetBtn.title = 'Reset article font to 100%';
+        resetBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            resetFontScale();
+        });
+
+        var largerBtn = document.createElement('button');
+        largerBtn.type = 'button';
+        largerBtn.textContent = 'A+';
+        largerBtn.title = 'Larger article font';
+        largerBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            changeFontScale(0.1);
+        });
+
+        fontControls.appendChild(smallerBtn);
+        fontControls.appendChild(resetBtn);
+        fontControls.appendChild(largerBtn);
+        document.body.appendChild(fontControls);
+        applyFontScale();
     }
 
     // -----------------------------------------------------------------
@@ -778,10 +919,12 @@ Features:
     // -----------------------------------------------------------------
 
     function init() {
+        fontScale = loadFontScale();
         injectStyles();
         buildToolbar();
         buildNotePopup();
         buildNoteTooltip();
+        buildFontControls();
         loadHighlights(function (data) {
             highlights = Array.isArray(data) ? data : [];
             restoreHighlights();

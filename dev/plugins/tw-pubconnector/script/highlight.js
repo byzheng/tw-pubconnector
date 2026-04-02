@@ -158,6 +158,15 @@ Features:
         applyFontScale();
     }
 
+    function isInsideHighlightUi(target) {
+        if (!target) return false;
+        if (toolbar && toolbar.contains(target)) return true;
+        if (notePopup && notePopup.contains(target)) return true;
+        if (noteTooltip && noteTooltip.contains(target)) return true;
+        if (fontControls && fontControls.contains(target)) return true;
+        return false;
+    }
+
     /** Return true if node is inside an a.tw-icon or a.tw-icon-tiny element. */
     function isInsideTwIcon(node) {
         var el = node.parentElement;
@@ -867,6 +876,7 @@ Features:
         rebuildColorRow(null);
         notePopup.querySelector('textarea').value = '';
         removeDeleteBtn();
+        window.getSelection().removeAllRanges();
 
         var saveBtn = resetSaveBtn('Highlight & Save');
         saveBtn.addEventListener('click', function (e) {
@@ -888,6 +898,7 @@ Features:
         hideToolbar();
         rebuildColorRow(h.color);
         notePopup.querySelector('textarea').value = h.note || '';
+        window.getSelection().removeAllRanges();
 
         // Ensure delete button exists
         var footer = notePopup.querySelector('.tw-hl-popup-footer');
@@ -973,8 +984,7 @@ Features:
     // -----------------------------------------------------------------
 
     document.addEventListener('mouseup', function (e) {
-        if (toolbar   && toolbar.contains(e.target))   return;
-        if (notePopup && notePopup.contains(e.target)) return;
+        if (isInsideHighlightUi(e.target)) return;
 
         // Give the browser a tick to finalise the selection
         setTimeout(function () {
@@ -993,8 +1003,7 @@ Features:
     });
 
     document.addEventListener('mousedown', function (e) {
-        if (toolbar   && toolbar.contains(e.target))   return;
-        if (notePopup && notePopup.contains(e.target)) return;
+        if (isInsideHighlightUi(e.target)) return;
         hideToolbar();
         if (notePopup) notePopup.style.display = 'none';
     });

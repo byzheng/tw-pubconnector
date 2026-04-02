@@ -101,6 +101,15 @@ Highlight notes widget for TiddlyWiki
         return box;
     }
 
+    function createArticleLink(tiddlerTitle) {
+        var link = document.createElement("a");
+        link.href = "/literature/article/" + encodeURIComponent(tiddlerTitle);
+        link.target = "_blank";
+        link.textContent = "Open Full Article";
+
+        return link;
+    }
+
     function createExcerpt(anchor, fallbackText, accentColor) {
         var excerpt = document.createElement("div");
         excerpt.style.display = "grid";
@@ -180,37 +189,37 @@ Highlight notes widget for TiddlyWiki
         return card;
     }
 
-    function renderNotes(containerDom, tiddlerTitle, emptyMessage) {
-        clearNode(containerDom);
-        containerDom.appendChild(createMessage("Loading highlight notes..."));
+    function renderNotes(listDom, tiddlerTitle, emptyMessage) {
+        clearNode(listDom);
+        listDom.appendChild(createMessage("Loading highlight notes..."));
 
         fetch("/literature/highlight/" + encodeURIComponent(tiddlerTitle))
             .then(function (response) {
                 if (!response.ok) {
-                    containerDom.innerHTML = "Error fetching highlight notes: " + response.statusText;
+                    listDom.innerHTML = "Error fetching highlight notes: " + response.statusText;
                     return Promise.reject();
                 }
                 return response.json();
             })
             .then(function (results) {
-                clearNode(containerDom);
+                clearNode(listDom);
 
                 var items = Array.isArray(results) ? results.filter(function (item) {
                     return item && item.note;
                 }) : [];
 
                 if (!items.length) {
-                    containerDom.appendChild(createMessage(emptyMessage));
+                    listDom.appendChild(createMessage(emptyMessage));
                     return;
                 }
 
                 for (var i = 0; i < items.length; i++) {
-                    containerDom.appendChild(createNoteCard(items[i]));
+                    listDom.appendChild(createNoteCard(items[i]));
                 }
             })
             .catch(function (err) {
                 if (err) {
-                    containerDom.innerHTML = "Exception fetching highlight notes: " + err.message;
+                    listDom.innerHTML = "Exception fetching highlight notes: " + err.message;
                 }
             });
     }
@@ -240,7 +249,13 @@ Highlight notes widget for TiddlyWiki
             return;
         }
 
-        renderNotes(containerDom, tiddlerTitle, emptyMessage);
+        var listDom = document.createElement("div");
+        listDom.style.display = "grid";
+        listDom.style.gap = "16px";
+
+        containerDom.appendChild(createArticleLink(tiddlerTitle));
+        containerDom.appendChild(listDom);
+        renderNotes(listDom, tiddlerTitle, emptyMessage);
     };
 
     HighlightNotesWidget.prototype.refresh = function (changedTiddlers) {

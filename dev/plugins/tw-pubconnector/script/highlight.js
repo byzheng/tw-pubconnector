@@ -220,7 +220,9 @@ Features:
         return {
             exact:  buf.slice(startPos, endPos),
             prefix: buf.slice(Math.max(0, startPos - ANCHOR_CONTEXT), startPos),
-            suffix: buf.slice(endPos, endPos + ANCHOR_CONTEXT)
+            suffix: buf.slice(endPos, endPos + ANCHOR_CONTEXT),
+            start:  startPos,
+            end:    endPos
         };
     }
 
@@ -354,6 +356,42 @@ Features:
         xhr.open('POST', API_BASE + '/' + encodeURIComponent(tiddlerName), true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.send(JSON.stringify(highlights));
+    }
+
+    function normalizeHighlightPositions(items) {
+        var changed = false;
+
+        items.forEach(function (h) {
+            if (!h || !h.anchor) return;
+
+            var hasAnchorStart = typeof h.anchor.start === 'number';
+            var hasAnchorEnd = typeof h.anchor.end === 'number';
+
+            if (typeof h.start === 'number' || typeof h.end === 'number') {
+                delete h.start;
+                delete h.end;
+                changed = true;
+            }
+
+            if (hasAnchorStart && hasAnchorEnd) {
+                return;
+            }
+
+            var range = rangeFromTextAnchor(h.anchor);
+            if (!range) return;
+
+            var normalizedAnchor = textAnchorFromRange(range);
+            if (!normalizedAnchor) return;
+
+            h.anchor.exact = normalizedAnchor.exact;
+            h.anchor.prefix = normalizedAnchor.prefix;
+            h.anchor.suffix = normalizedAnchor.suffix;
+            h.anchor.start = normalizedAnchor.start;
+            h.anchor.end = normalizedAnchor.end;
+            changed = true;
+        });
+
+        return changed;
     }
 
     // -----------------------------------------------------------------
@@ -949,6 +987,9 @@ Features:
         buildFontControls();
         loadHighlights(function (data) {
             highlights = Array.isArray(data) ? data : [];
+            if (normalizeHighlightPositions(highlights)) {
+                saveHighlights();
+            }
             restoreHighlights();
         });
     }

@@ -10,14 +10,29 @@ Request body must be a JSON array of highlight objects.
 Each highlight is validated and sanitised before writing.
 
 Highlight object schema:
-  {
-    "id":    string,
-    "start": number,  // absolute character offset in document.body
-    "end":   number,
-    "text":  string,  // the highlighted text (for reference)
-    "color": string,  // CSS hex colour, e.g. "#fef08a"
-    "note":  string   // optional annotation
-  }
+    Legacy offset format:
+    {
+        "id":    string,
+        "start": number,
+        "end":   number,
+        "text":  string,
+        "color": string,
+        "note":  string
+    }
+
+    Anchor format:
+    {
+        "id":    string,
+        "color": string,
+        "note":  string,
+        "anchor": {
+            "exact":  string,
+            "prefix": string,
+            "suffix": string,
+            "start":  number,
+            "end":    number
+        }
+    }
 
 \*/
 (function () {
@@ -71,6 +86,10 @@ Highlight object schema:
         // Sanitise each highlight entry (supports both text-anchor and legacy offset formats)
         var sanitised = body
             .map(function (h) {
+                var parsedStart = parseInt(h.start, 10);
+                var parsedEnd = parseInt(h.end, 10);
+                var anchorStart = h.anchor ? parseInt(h.anchor.start, 10) : NaN;
+                var anchorEnd = h.anchor ? parseInt(h.anchor.end, 10) : NaN;
                 var entry = {
                     id:    String(h.id    || "").slice(0, 64),
                     color: HEX_COLOR_RE.test(h.color) ? h.color : "#fef08a",
@@ -83,17 +102,38 @@ Highlight object schema:
                         prefix: String(h.anchor.prefix || "").slice(0, 256),
                         suffix: String(h.anchor.suffix || "").slice(0, 256)
                     };
+                    if (isNaN(anchorStart) && !isNaN(parsedStart) && parsedStart >= 0) {
+                        anchorStart = parsedStart;
+                    }
+                    if (isNaN(anchorEnd) && !isNaN(parsedEnd) && parsedEnd > parsedStart) {
+                        anchorEnd = parsedEnd;
+                    }
+                    if (!isNaN(anchorStart) && anchorStart >= 0) {
+                        entry.anchor.start = anchorStart;
+                    }
+                    if (!isNaN(anchorEnd) && anchorEnd > anchorStart) {
+                        entry.anchor.end = anchorEnd;
+                    }
                 } else {
                     // Legacy format: absolute char offsets
-                    entry.start = parseInt(h.start, 10);
-                    entry.end   = parseInt(h.end,   10);
+                    entry.start = parsedStart;
+                    entry.end   = parsedEnd;
                     entry.text  = String(h.text || "").slice(0, 4000);
                 }
                 return entry;
             })
             .filter(function (h) {
                 if (!h.id) return false;
-                if (h.anchor) return h.anchor.exact.length > 0;
+                if (h.anchor) {
+                    if (!h.anchor.exact.length) return false;
+                    if (typeof h.start === 'number' && typeof h.end === 'number') {
+                        return h.start >= 0 && h.end > h.start;
+                    }
+                    if (typeof h.anchor.start === 'number' && typeof h.anchor.end === 'number') {
+                        return h.anchor.start >= 0 && h.anchor.end > h.anchor.start;
+                    }
+                    return true;
+                }
                 return !isNaN(h.start) && h.start >= 0 && !isNaN(h.end) && h.end > h.start;
             });
 

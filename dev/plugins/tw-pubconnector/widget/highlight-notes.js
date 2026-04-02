@@ -212,6 +212,26 @@ Highlight notes widget for TiddlyWiki
         return card;
     }
 
+    function getSortStart(noteItem) {
+        if (noteItem && typeof noteItem.start === "number" && isFinite(noteItem.start)) {
+            return noteItem.start;
+        }
+        if (noteItem && noteItem.anchor && typeof noteItem.anchor.start === "number" && isFinite(noteItem.anchor.start)) {
+            return noteItem.anchor.start;
+        }
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    function getSortEnd(noteItem) {
+        if (noteItem && typeof noteItem.end === "number" && isFinite(noteItem.end)) {
+            return noteItem.end;
+        }
+        if (noteItem && noteItem.anchor && typeof noteItem.anchor.end === "number" && isFinite(noteItem.anchor.end)) {
+            return noteItem.anchor.end;
+        }
+        return Number.MAX_SAFE_INTEGER;
+    }
+
     function renderNotes(listDom, tiddlerTitle, emptyMessage) {
         clearNode(listDom);
         listDom.appendChild(createMessage("Loading highlight notes..."));
@@ -230,6 +250,14 @@ Highlight notes widget for TiddlyWiki
                 var items = Array.isArray(results) ? results.filter(function (item) {
                     return item && (item.anchor || item.text);
                 }) : [];
+
+                items.sort(function (left, right) {
+                    var startDiff = getSortStart(left) - getSortStart(right);
+                    if (startDiff !== 0) {
+                        return startDiff;
+                    }
+                    return getSortEnd(left) - getSortEnd(right);
+                });
 
                 if (!items.length) {
                     listDom.appendChild(createMessage(emptyMessage));

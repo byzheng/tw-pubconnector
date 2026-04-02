@@ -524,7 +524,7 @@ Features:
             ' position:fixed;background:#fff;border-radius:10px;padding:12px;',
             ' box-shadow:0 4px 18px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
             ' z-index:2147483647;display:flex;flex-direction:column;gap:9px;',
-            ' min-width:520px;pointer-events:all;',
+            ' min-width:520px;max-height:calc(100vh - 16px);overflow-y:auto;pointer-events:all;',
             '}',
             '#tw-hl-note-popup textarea{',
             ' width:100%;box-sizing:border-box;height:140px;border-radius:6px;',
@@ -554,6 +554,7 @@ Features:
             ' background:#fff;border-radius:12px;padding:18px 20px;',
             ' box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
             ' z-index:2147483645;pointer-events:auto;border-left:5px solid #fef08a;',
+            ' max-height:calc(100vh - 16px);overflow-y:auto;',
             ' opacity:0;transform:translateX(14px);',
             ' transition:opacity .18s ease,transform .18s ease;',
             '}',
@@ -720,6 +721,12 @@ Features:
         noteTooltip.style.top = top + 'px';
         noteTooltip.classList.add('visible');
         scheduleNoteTooltipHide(2200);
+        requestAnimationFrame(function () {
+            if (!noteTooltip || activeNoteHighlight !== h || activeNoteMark !== mark) return;
+            var panelRect = noteTooltip.getBoundingClientRect();
+            var clampedTop = Math.max(8, Math.min(top, window.innerHeight - panelRect.height - 8));
+            noteTooltip.style.top = clampedTop + 'px';
+        });
 
         if (!note) {
             textEl.innerHTML = '<div class="tw-hl-nt-empty">No note yet.</div>';

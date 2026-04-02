@@ -673,9 +673,11 @@ Features:
         editBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             if (!activeNoteHighlight || !activeNoteMark) return;
+            var mark = activeNoteMark;
+            var highlight = activeNoteHighlight;
+            var rect = mark.getBoundingClientRect();
             hideNoteTooltip();
-            var rect = activeNoteMark.getBoundingClientRect();
-            showEditPopup(activeNoteMark, activeNoteHighlight, rect.right, rect.top);
+            showEditPopup(mark, highlight, rect.right, rect.top);
         });
         footerEl.appendChild(editBtn);
 

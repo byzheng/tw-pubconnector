@@ -110,6 +110,23 @@ Highlight notes widget for TiddlyWiki
         return link;
     }
 
+    function createRefreshButton(onClick) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Refresh Notes";
+        button.style.border = "0";
+        button.style.background = "transparent";
+        button.style.padding = "0";
+        button.style.margin = "0";
+        button.style.color = "#64748b";
+        button.style.fontSize = "0.8rem";
+        button.style.lineHeight = "1.2";
+        button.style.cursor = "pointer";
+        button.style.textDecoration = "underline";
+        button.addEventListener("click", onClick);
+        return button;
+    }
+
     function createExcerpt(anchor, fallbackText, accentColor) {
         var excerpt = document.createElement("div");
         excerpt.style.display = "grid";
@@ -253,7 +270,20 @@ Highlight notes widget for TiddlyWiki
         listDom.style.display = "grid";
         listDom.style.gap = "16px";
 
-        containerDom.appendChild(createArticleLink(tiddlerTitle));
+        var actionsDom = document.createElement("div");
+        actionsDom.style.display = "flex";
+        actionsDom.style.alignItems = "flex-start";
+        actionsDom.style.justifyContent = "space-between";
+        actionsDom.style.gap = "12px";
+        actionsDom.style.flexWrap = "wrap";
+        actionsDom.style.width = "100%";
+
+        actionsDom.appendChild(createArticleLink(tiddlerTitle));
+        actionsDom.appendChild(createRefreshButton(function () {
+            renderNotes(listDom, tiddlerTitle, emptyMessage);
+        }));
+
+        containerDom.appendChild(actionsDom);
         containerDom.appendChild(listDom);
         renderNotes(listDom, tiddlerTitle, emptyMessage);
     };

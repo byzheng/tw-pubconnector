@@ -48,6 +48,8 @@ Features:
     var pendingCY        = 0;    // clientY from the mouseup that set pendingRange
     var renderCache      = {};   // {wikitext: renderedHtml}
     var fontScale        = 1;
+    var activeNoteHighlight = null;
+    var activeNoteMark = null;
 
     // -----------------------------------------------------------------
     // Tiddler name from URL
@@ -437,7 +439,11 @@ Features:
 
         mark.addEventListener('click', function (e) {
             e.stopPropagation();
-            showEditPopup(mark, h, e.clientX, e.clientY);
+            if (h.note) {
+                showNoteTooltip(mark, h);
+            } else {
+                showEditPopup(mark, h, e.clientX, e.clientY);
+            }
         });
     }
 
@@ -471,6 +477,11 @@ Features:
             mark.style.outline = previousOutline;
             mark.style.outlineOffset = previousOutlineOffset;
         }, 2000);
+    }
+
+    function scheduleNoteTooltipHide(delay) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = window.setTimeout(hideNoteTooltip, delay || 1000);
     }
 
     /** Remove highlight from the highlights array and unwrap its <mark> node. */
@@ -522,9 +533,9 @@ Features:
             '}',
             '#tw-hl-note-popup textarea:focus{border-color:#3b82f6;background:#fff}',
             '#tw-hl-note-popup textarea::placeholder{color:#94a3b8}',
-            '.tw-hl-popup-footer{display:flex;justify-content:flex-end;gap:6px;align-items:center}',
+            '.tw-hl-popup-footer{display:flex;justify-content:center;gap:8px;align-items:center}',
             '.tw-hl-btn{',
-            ' border:none;border-radius:5px;padding:4px 14px;',
+            ' flex:1 1 120px;max-width:150px;border:none;border-radius:5px;padding:8px 14px;',
             ' cursor:pointer;font-size:13px;font-weight:500;',
             '}',
             '.tw-hl-btn-primary{background:#3b82f6;color:#fff}',
@@ -537,7 +548,7 @@ Features:
             '.tw-hl-color-option{display:flex;flex-direction:column;align-items:center;gap:4px}',
             '.tw-hl-color-name{font-size:11px;color:#64748b;line-height:1.2;text-align:center;max-width:64px}',
             '.tw-hl-popup-label{font-size:11px;color:#64748b;letter-spacing:.04em}',
-            /* --- hover note panel --- */
+            /* --- note panel --- */
             '#tw-hl-note-tooltip{',
             ' position:fixed;right:24px;max-width:320px;min-width:220px;',
             ' background:#fff;border-radius:12px;padding:18px 20px;',
@@ -560,6 +571,12 @@ Features:
             '#tw-hl-note-tooltip .tw-hl-nt-text a{color:#2563eb}',
             '#tw-hl-note-tooltip .tw-hl-nt-text code{background:#f1f5f9;border-radius:3px;padding:1px 4px;font-size:.9em}',
             '#tw-hl-note-tooltip .tw-hl-nt-text ul,#tw-hl-note-tooltip .tw-hl-nt-text ol{margin:.4em 0;padding-left:1.4em}',
+            '#tw-hl-note-tooltip .tw-hl-nt-empty{color:#94a3b8;font-style:italic}',
+            '#tw-hl-note-tooltip .tw-hl-nt-footer{display:flex;justify-content:stretch;gap:8px;margin-top:14px}',
+            '#tw-hl-note-tooltip .tw-hl-nt-btn{flex:1 1 0;border:none;background:#f1f5f9;color:#334155;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}',
+            '#tw-hl-note-tooltip .tw-hl-nt-btn:hover{background:#e2e8f0}',
+            '#tw-hl-note-tooltip .tw-hl-nt-btn-primary{background:#3b82f6;color:#fff}',
+            '#tw-hl-note-tooltip .tw-hl-nt-btn-primary:hover{background:#2563eb}',
             '#tw-hl-font-controls{',
             ' position:fixed;right:24px;bottom:24px;display:flex;align-items:center;gap:8px;',
             ' background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;',
@@ -620,7 +637,7 @@ Features:
     }
 
     // -----------------------------------------------------------------
-    // Hover note panel (right side of page)
+    // Note panel (right side of page)
     // -----------------------------------------------------------------
 
     function buildNoteTooltip() {
@@ -636,70 +653,104 @@ Features:
         textEl.className = 'tw-hl-nt-text';
         noteTooltip.appendChild(textEl);
 
-        document.body.appendChild(noteTooltip);
+        var footerEl = document.createElement('div');
+        footerEl.className = 'tw-hl-nt-footer';
 
-        // Event delegation: show when hovering a mark that has a note
-        document.body.addEventListener('mouseover', function (e) {
-            var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
-            if (!mark) return;
-            var note = mark.getAttribute('data-note');
-            var category = mark.getAttribute('data-category') || getColorName(mark.style.backgroundColor);
-            if (!note) return;
-            clearTimeout(tooltipHideTimer);
-
-            var textEl = noteTooltip.querySelector('.tw-hl-nt-text');
-            var labelEl = noteTooltip.querySelector('.tw-hl-nt-label');
-            noteTooltip.style.borderLeftColor = mark.style.backgroundColor || '#fef08a';
-            if (labelEl) {
-                labelEl.textContent = category || 'Note';
-            }
-
-            // Position and show immediately with a loading state
-            var rect = mark.getBoundingClientRect();
-            var top  = Math.max(8, Math.min(rect.top, window.innerHeight - 8));
-            noteTooltip.style.top = top + 'px';
-            noteTooltip.classList.add('visible');
-
-            // Render wikitext, then update content (instant if cached)
-            renderNoteHtml(note, function (html) {
-                if (html) {
-                    textEl.innerHTML = html;
-                    // Wire up any tiddlywiki-link elements in the rendered HTML
-                    textEl.querySelectorAll('a.tc-tiddlylink').forEach(function (a) {
-                        a.addEventListener('click', function (e) {
-                            e.preventDefault();
-                            var href = a.getAttribute('href') || '';
-                            var title = href.startsWith('#') ? href.slice(1) : href;
-                            if (!title) return;
-                            title = decodeURIComponent(title);
-                            var bridge = window.twLiveBridge;
-                            if (bridge && bridge.openTiddler) {
-                                bridge.openTiddler(title);
-                            }
-                        });
-                    });
-                } else {
-                    textEl.textContent = note;
-                }
-            });
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'tw-hl-nt-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            hideNoteTooltip();
         });
+        footerEl.appendChild(closeBtn);
 
-        document.body.addEventListener('mouseout', function (e) {
-            var mark = e.target.closest ? e.target.closest('mark[data-note]') : null;
-            if (!mark) return;
-            tooltipHideTimer = setTimeout(hideNoteTooltip, 1000);
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'tw-hl-nt-btn tw-hl-nt-btn-primary';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (!activeNoteHighlight || !activeNoteMark) return;
+            hideNoteTooltip();
+            var rect = activeNoteMark.getBoundingClientRect();
+            showEditPopup(activeNoteMark, activeNoteHighlight, rect.right, rect.top);
         });
+        footerEl.appendChild(editBtn);
 
-        // Keep tooltip open while mouse is inside it
+        noteTooltip.appendChild(footerEl);
+
         noteTooltip.addEventListener('mouseenter', function () {
             clearTimeout(tooltipHideTimer);
         });
+
         noteTooltip.addEventListener('mouseleave', function () {
-            tooltipHideTimer = setTimeout(hideNoteTooltip, 600);
+            scheduleNoteTooltipHide(900);
+        });
+
+        document.body.appendChild(noteTooltip);
+    }
+
+    function showNoteTooltip(mark, h) {
+        if (!noteTooltip || !mark || !h) return;
+
+        clearTimeout(tooltipHideTimer);
+        activeNoteHighlight = h;
+        activeNoteMark = mark;
+
+        var note = h.note || '';
+        var category = mark.getAttribute('data-category') || getColorName(mark.style.backgroundColor);
+        var textEl = noteTooltip.querySelector('.tw-hl-nt-text');
+        var labelEl = noteTooltip.querySelector('.tw-hl-nt-label');
+        var editBtn = noteTooltip.querySelector('.tw-hl-nt-btn-primary');
+
+        noteTooltip.style.borderLeftColor = mark.style.backgroundColor || '#fef08a';
+        if (labelEl) {
+            labelEl.textContent = category || 'Note';
+        }
+        if (editBtn) {
+            editBtn.textContent = note ? 'Edit' : 'Add note';
+        }
+
+        var rect = mark.getBoundingClientRect();
+        var top = Math.max(8, Math.min(rect.top, window.innerHeight - 8));
+        noteTooltip.style.top = top + 'px';
+        noteTooltip.classList.add('visible');
+        scheduleNoteTooltipHide(2200);
+
+        if (!note) {
+            textEl.innerHTML = '<div class="tw-hl-nt-empty">No note yet.</div>';
+            return;
+        }
+
+        renderNoteHtml(note, function (html) {
+            if (activeNoteHighlight !== h || activeNoteMark !== mark) return;
+            if (html) {
+                textEl.innerHTML = html;
+                textEl.querySelectorAll('a.tc-tiddlylink').forEach(function (a) {
+                    a.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        var href = a.getAttribute('href') || '';
+                        var title = href.startsWith('#') ? href.slice(1) : href;
+                        if (!title) return;
+                        title = decodeURIComponent(title);
+                        var bridge = window.twLiveBridge;
+                        if (bridge && bridge.openTiddler) {
+                            bridge.openTiddler(title);
+                        }
+                    });
+                });
+            } else {
+                textEl.textContent = note;
+            }
         });
     }
 
     function hideNoteTooltip() {
+        clearTimeout(tooltipHideTimer);
+        activeNoteHighlight = null;
+        activeNoteMark = null;
         if (noteTooltip) noteTooltip.classList.remove('visible');
     }
 
@@ -1006,6 +1057,7 @@ Features:
         if (isInsideHighlightUi(e.target)) return;
         hideToolbar();
         if (notePopup) notePopup.style.display = 'none';
+        hideNoteTooltip();
     });
 
     // -----------------------------------------------------------------

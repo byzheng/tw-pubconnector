@@ -110,6 +110,10 @@ Highlight notes widget for TiddlyWiki
         return link;
     }
 
+    function normalizeExcerptText(text) {
+        return (text || "").replace(/\s*\r?\n\s*/g, " ");
+    }
+
     function createRefreshButton(onClick) {
         var button = document.createElement("button");
         button.type = "button";
@@ -148,18 +152,18 @@ Highlight notes widget for TiddlyWiki
         content.style.fontSize = "0.95rem";
         content.style.lineHeight = "1.6";
 
-        var prefix = document.createTextNode("..." + (anchor.prefix || ""));
+        var prefix = document.createTextNode("..." + normalizeExcerptText(anchor.prefix));
         content.appendChild(prefix);
 
         var exact = document.createElement("span");
-        exact.textContent = anchor.exact || fallbackText || "";
+        exact.textContent = normalizeExcerptText(anchor.exact || fallbackText);
         exact.style.backgroundColor = accentColor;
         exact.style.borderRadius = "6px";
         exact.style.padding = "0";
         exact.style.boxShadow = "inset 0 0 0 1px rgba(15,23,42,0.08)";
         content.appendChild(exact);
 
-        var suffix = document.createTextNode((anchor.suffix || "") + "...");
+        var suffix = document.createTextNode(normalizeExcerptText(anchor.suffix) + "...");
         content.appendChild(suffix);
 
         excerpt.appendChild(content);
@@ -200,7 +204,9 @@ Highlight notes widget for TiddlyWiki
         header.appendChild(badge);
 
         card.appendChild(header);
-        card.appendChild(createNoteBox(noteItem.note || ""));
+        if (noteItem.note) {
+            card.appendChild(createNoteBox(noteItem.note));
+        }
         card.appendChild(createExcerpt(anchor, noteItem.text || "", colorInfo.value));
 
         return card;
@@ -222,7 +228,7 @@ Highlight notes widget for TiddlyWiki
                 clearNode(listDom);
 
                 var items = Array.isArray(results) ? results.filter(function (item) {
-                    return item && item.note;
+                    return item && (item.anchor || item.text);
                 }) : [];
 
                 if (!items.length) {

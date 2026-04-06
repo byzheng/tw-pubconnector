@@ -1,3 +1,77 @@
+body.tw-pubconnector-article-page {
+  --tw-pubconnector-article-max-width: 1120px;
+  --tw-pubconnector-article-padding: clamp(20px, 3.4vw, 42px);
+  margin: 0;
+  padding: clamp(12px, 2vw, 24px);
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 40%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  color: #1e293b;
+}
+
+.tw-pubconnector-article-mode {
+  box-sizing: border-box;
+  max-width: var(--tw-pubconnector-article-max-width);
+  min-height: calc(100vh - 24px);
+  margin: 0 auto;
+  padding: var(--tw-pubconnector-article-padding);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  overflow-wrap: anywhere;
+}
+
+.tw-pubconnector-article-mode > *:first-child {
+  margin-top: 0;
+}
+
+.tw-pubconnector-article-mode > *:last-child {
+  margin-bottom: 0;
+}
+
+.tw-pubconnector-article-mode img,
+.tw-pubconnector-article-mode svg,
+.tw-pubconnector-article-mode video,
+.tw-pubconnector-article-mode canvas,
+.tw-pubconnector-article-mode iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.tw-pubconnector-article-mode table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tw-pubconnector-article-mode pre,
+.tw-pubconnector-article-mode code {
+  max-width: 100%;
+}
+
+.tw-pubconnector-article-mode pre {
+  overflow-x: auto;
+}
+
+.tw-pubconnector-article-mode .tw-icon,
+.tw-pubconnector-article-mode .tw-icon-tiny,
+.tw-pubconnector-article-mode .tw-tag {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  body.tw-pubconnector-article-page {
+    padding: 12px;
+  }
+
+  .tw-pubconnector-article-mode {
+    min-height: auto;
+    border-radius: 18px;
+    padding: clamp(16px, 4vw, 24px);
+  }
+}
+
 /* Modern Literature Card Styles */
 .tw-pubconnector-list {
   max-width: 1200px;

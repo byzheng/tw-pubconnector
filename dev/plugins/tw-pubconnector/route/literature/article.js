@@ -142,12 +142,14 @@ Get literature article for a tiddler
 			}
 
 
-			// Inject style tag before </body>
-			const styleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
+			// Inject shared literature reader styles.
+			const styleTiddler =
+				$tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/literature") ||
+				$tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
 			if (styleTiddler) {
 				const styleTag = document.createElement('style');
 				styleTag.textContent = styleTiddler.fields.text || "";
-				document.body.appendChild(styleTag);
+				(document.head || document.body).appendChild(styleTag);
 			}
 
 			// Inject livebridge WebSocket client

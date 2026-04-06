@@ -1,9 +1,26 @@
 {
         "wiley.com": {
-            "articleSelector": "div#article__content"
+            "articleSelector": "div#article__content",
+            "removeSelectors": [
+                "div.stickybar__wrapper"
+            ],
+            "classRemovals": [
+                {
+                    "selector": "div#article__content",
+                    "classes": [
+                        "col-sm-12", "col-md-8", "col-lg-8"
+                    ]
+                }
+            ]
         },
         "sciencedirect.com": {
-            "articleSelector": "article"
+            "articleSelector": "article",
+            "classRemovals": [
+                {
+                    "selector": "article",
+                    "classes": ["col-md-16", "col-lg-12"]
+                }
+            ]
         }, 
         "publish.csiro.au": {
             "articleSelector": "section.region-main-content",

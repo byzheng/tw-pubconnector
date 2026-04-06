@@ -11,6 +11,26 @@ Utils functions
 
 
 
+function querySelectorAllIncludingRoot(root, selector) {
+    const matches = [];
+    if (root.matches && root.matches(selector)) {
+        matches.push(root);
+    }
+    root.querySelectorAll(selector).forEach(el => {
+        matches.push(el);
+    });
+    return matches;
+}
+
+function getArticleSiteClass(siteKey) {
+    return 'tw-pubconnector-article-site-' + String(siteKey || 'unknown')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+
+
 function getURL(document) {
     // Get entire document as string (if not already in a string)
     const htmlString = document.documentElement.outerHTML;
@@ -63,26 +83,87 @@ function getArticle(document, siteConfig) {
 
     let siteKey = Object.keys(siteConfig).find(site => url.includes(site));
     if (!siteKey) return document;
-    let { articleSelector, removeSelectors } = siteConfig[siteKey];
+    let { articleSelector, removeSelectors, classRemovals } = siteConfig[siteKey];
     if (!Array.isArray(articleSelector)) {
         articleSelector = [articleSelector];
     }
-    const keepDefaultSelectors = ["style"];
-    const keepSelectors = [...articleSelector, ...keepDefaultSelectors];
-    const clones = [];
-    keepSelectors.forEach(selector => {
+    const articleClones = [];
+    articleSelector.forEach(selector => {
         document.querySelectorAll(selector).forEach(el => {
-            clones.push(el.cloneNode(true)); // true = deep clone
+            articleClones.push(el.cloneNode(true)); // true = deep clone
         });
     });
-    
-    if (Array.isArray(removeSelectors)) {
-        removeSelectors.appendChild(".tw-icon");
-        removeSelectors.appendChild(".tw-icon-tiny");
-        removeSelectors.appendChild(".tw-tag");
-        removeSelectors.forEach(selector => {
+
+    const styleClones = [];
+    document.querySelectorAll('style').forEach(el => {
+        styleClones.push(el.cloneNode(true));
+    });
+
+    if (!articleClones.length) {
+        return document;
+    }
+
+    const siteClass = getArticleSiteClass(siteKey);
+
+    styleClones.forEach(styleClone => {
+        if (document.head) {
+            document.head.appendChild(styleClone);
+        } else {
+            document.documentElement.insertBefore(styleClone, document.body || null);
+        }
+    });
+
+    document.body.classList.add('tw-pubconnector-article-page', siteClass);
+    document.documentElement.classList.add('tw-pubconnector-article-document');
+
+    const articleWrapper = document.createElement('div');
+    articleWrapper.className = 'tw-pubconnector-article-mode ' + siteClass;
+    articleWrapper.setAttribute('data-tw-pubconnector-site', siteKey);
+
+    articleClones.forEach(clone => {
+        articleWrapper.appendChild(clone);
+    });
+
+    const clones = [articleWrapper];
+
+    querySelectorAllIncludingRoot(articleWrapper, 'script').forEach(script => {
+        script.remove();
+    });
+
+    querySelectorAllIncludingRoot(articleWrapper, 'style').forEach(style => {
+        style.remove();
+    });
+
+    querySelectorAllIncludingRoot(articleWrapper, 'noscript').forEach(node => {
+        node.remove();
+    });
+
+    var mergedRemoveSelectors = Array.isArray(removeSelectors) ? removeSelectors.slice() : [];
+    mergedRemoveSelectors.push(".tw-icon");
+    mergedRemoveSelectors.push(".tw-icon-tiny");
+    mergedRemoveSelectors.push(".tw-tag");
+
+    if (mergedRemoveSelectors.length) {
+        mergedRemoveSelectors.forEach(selector => {
             clones.forEach(clone => {
                 clone.querySelectorAll(selector).forEach(el => el.remove());
+            });
+        });
+    }
+    
+    if (Array.isArray(classRemovals)) {
+        classRemovals.forEach(rule => {
+            if (!rule || !rule.selector || !Array.isArray(rule.classes) || !rule.classes.length) {
+                return;
+            }
+            clones.forEach(clone => {
+                querySelectorAllIncludingRoot(clone, rule.selector).forEach(el => {
+                    rule.classes.forEach(className => {
+                        if (className) {
+                            el.classList.remove(className);
+                        }
+                    });
+                });
             });
         });
     }
@@ -91,15 +172,6 @@ function getArticle(document, siteConfig) {
     clones.forEach(clone => {
         document.body.appendChild(clone);
     });
-
-    if (url.includes('sciencedirect.com')) {
-        document.querySelectorAll('article.col-md-16').forEach(el => {
-            el.classList.remove('col-md-16');
-        });
-        document.querySelectorAll('article.col-lg-12').forEach(el => {
-            el.classList.remove('col-lg-12');
-        });
-    }
 
     return document
 

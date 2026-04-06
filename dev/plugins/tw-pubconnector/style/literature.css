@@ -54,11 +54,6 @@ body.tw-pubconnector-article-page {
   overflow-x: auto;
 }
 
-.tw-pubconnector-article-mode .tw-icon,
-.tw-pubconnector-article-mode .tw-icon-tiny,
-.tw-pubconnector-article-mode .tw-tag {
-  display: none !important;
-}
 
 @media (max-width: 900px) {
   body.tw-pubconnector-article-page {

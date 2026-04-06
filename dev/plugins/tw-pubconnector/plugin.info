@@ -3,7 +3,7 @@
     "name": "tw-pubconnector",
     "description": "A small plugin for Chrome Extension PubConnector",
     "author": "Bangyou Zheng",
-    "version": "0.5.23",
+    "version": "0.5.24",
     "core-version": ">5.1.23",
     "source": "https://tw-pubconnector.bangyou.me",
     "list": "readme settings license",

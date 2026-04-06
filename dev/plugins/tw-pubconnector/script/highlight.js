@@ -550,7 +550,7 @@ Features:
             '.tw-hl-popup-label{font-size:11px;color:#64748b;letter-spacing:.04em}',
             /* --- note panel --- */
             '#tw-hl-note-tooltip{',
-            ' position:fixed;right:24px;max-width:320px;min-width:220px;',
+            ' position:fixed;right:24px;width:min(460px,calc(100vw - 48px));min-width:220px;',
             ' background:#fff;border-radius:12px;padding:18px 20px;',
             ' box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid #e2e8f0;',
             ' z-index:2147483645;pointer-events:auto;border-left:5px solid #fef08a;',

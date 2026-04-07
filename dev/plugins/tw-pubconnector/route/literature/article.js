@@ -203,10 +203,22 @@ Get literature article for a tiddler
 			const styleTiddler =
 				$tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/literature") ||
 				$tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/style.js");
+			const highlightStyleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/highlight");
+			const domainLinkStyleTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/style/domain-link");
 			if (styleTiddler) {
 				const styleTag = document.createElement('style');
 				styleTag.textContent = styleTiddler.fields.text || "";
 				(document.head || document.body).appendChild(styleTag);
+			}
+			if (highlightStyleTiddler) {
+				const highlightStyleTag = document.createElement('style');
+				highlightStyleTag.textContent = highlightStyleTiddler.fields.text || "";
+				(document.head || document.body).appendChild(highlightStyleTag);
+			}
+			if (domainLinkEnabled && domainLinkStyleTiddler) {
+				const domainLinkStyleTag = document.createElement('style');
+				domainLinkStyleTag.textContent = domainLinkStyleTiddler.fields.text || "";
+				(document.head || document.body).appendChild(domainLinkStyleTag);
 			}
 
 			// Inject livebridge WebSocket client

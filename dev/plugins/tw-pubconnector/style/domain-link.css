@@ -1,0 +1,24 @@
+a.tw-domain-link,
+a.tw-domain-link:link,
+a.tw-domain-link:visited,
+a.tw-domain-link:active {
+  color: inherit;
+  text-decoration: none;
+  font-weight: inherit;
+  padding: .03em .28em;
+  border-radius: .32em;
+  background: linear-gradient(135deg, rgba(100, 116, 139, .08) 0%, rgba(148, 163, 184, .14) 100%);
+  box-shadow: inset 0 0 0 1px rgba(71, 85, 105, .16);
+  transition: background .16s ease, box-shadow .16s ease;
+}
+
+a.tw-domain-link:hover {
+  color: inherit;
+  background: linear-gradient(135deg, rgba(100, 116, 139, .12) 0%, rgba(148, 163, 184, .2) 100%);
+  box-shadow: inset 0 0 0 1px rgba(71, 85, 105, .24);
+}
+
+a.tw-domain-link:focus-visible {
+  outline: 2px solid rgba(71, 85, 105, .24);
+  outline-offset: 2px;
+}

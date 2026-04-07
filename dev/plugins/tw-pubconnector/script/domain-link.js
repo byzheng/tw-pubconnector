@@ -259,16 +259,6 @@ Features:
         }, 16);
     }
 
-    function injectStyles() {
-        var style = document.createElement('style');
-        style.textContent = [
-            'a.tw-domain-link{color:#0f766e;text-decoration:none;font-weight:600;padding:0 .22em;border-radius:.28em;background:linear-gradient(180deg,rgba(15,118,110,0) 0%,rgba(15,118,110,0) 58%,rgba(45,212,191,.2) 58%,rgba(45,212,191,.2) 100%);box-shadow:inset 0 0 0 1px rgba(13,148,136,.22);transition:color .16s ease,background .16s ease,box-shadow .16s ease}',
-            'a.tw-domain-link:hover{color:#134e4a;background:linear-gradient(180deg,rgba(15,118,110,0) 0%,rgba(15,118,110,0) 48%,rgba(45,212,191,.32) 48%,rgba(45,212,191,.32) 100%);box-shadow:inset 0 0 0 1px rgba(15,118,110,.38)}',
-            'a.tw-domain-link:focus-visible{outline:2px solid rgba(13,148,136,.45);outline-offset:2px}'
-        ].join('');
-        document.head.appendChild(style);
-    }
-
     function restoreDomainLinksGradually() {
         if (!domainLinkPattern) return;
 
@@ -304,7 +294,6 @@ Features:
         }
         prepareDomainLinks();
         if (!domainLinkPattern) return;
-        injectStyles();
         restoreDomainLinksGradually();
     }
 

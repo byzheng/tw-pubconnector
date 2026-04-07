@@ -118,13 +118,9 @@ Citation Watch module for TiddlyWiki - tracks latest citations for key papers an
         }
 
         /**
-         * Get latest citations for a specific paper DOI
-         * Supports multiple platforms: opencitations (recommended), crossref (fallback)
+         * Get latest citations for a specific paper DOI.
+         * The current implementation uses the configured OpenAlex-backed citation path.
          * @param {string} doi - The DOI to check
-         * @param {Object} options - Options for citation retrieval
-         * @param {string} options.platform - Platform to use (default: "opencitations")
-         * @param {number} options.limit - Max results (default: 100)
-         * @param {boolean} options.fetchAll - Fetch all pages (default: false)
          * @returns {Promise<Object>} - Citation results
          */
         async function getLatestCitationsByDOI(doi, days) {

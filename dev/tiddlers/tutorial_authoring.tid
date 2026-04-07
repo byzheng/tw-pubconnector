@@ -1,0 +1,41 @@
+caption: Authoring
+created: 20260407000000000
+modified: 20260407000000000
+order: 2
+tags: tutorial
+title: tutorial/authoring
+type: text/vnd.tiddlywiki
+
+!! Authoring and publication sync
+
+The authoring workflow is built around tiddlers tagged `Colleague`. Each colleague tiddler can carry one or more platform identifiers. The plugin then queries enabled providers, caches the responses, and uses DOI matches to connect papers back to people.
+
+!! Supported identifiers
+
+* `orcid`
+* `openalex`
+* `google-scholar`
+* `researcherid`
+* `scopus`
+
+!! What happens during sync
+
+* The `/authors/cache` route starts a refresh across all colleague tiddlers.
+* Each enabled provider retrieves works for the configured identifiers.
+* Cached data is cleaned using TTL and size limits.
+* DOI-backed results can be used to tag imported `bibtex-entry` tiddlers with matching authors.
+
+!! Configuration
+
+Open [[$:/plugins/bangyou/tw-pubconnector/settings/authoring]] to control:
+
+* data expiration and cleanup limits
+* automatic update schedule
+* provider enable or disable flags
+* API keys and daily request limits
+* Scholar auto-close behavior
+
+!! Notes
+
+* Google Scholar workflows depend on the browser extension because the data is collected through browser navigation.
+* ORCID, OpenAlex, Web of Science, and Scopus can be configured directly through plugin settings.

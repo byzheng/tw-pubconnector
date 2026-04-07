@@ -1,11 +1,11 @@
 caption: Widgets
 created: 20251224000728324
 modified: 20251224001858025
-order: 1
+order: 5
 tags: tutorial
 title: tutorial/widgets
 type: text/vnd.tiddlywiki
 
-<<tabs tabsList:"[tag[widget]sort[order]]" default:"widget/literatures-latest" class:"tc-horizontal" template:"$:/tabs/tabTemplate" state:"$:/state/tab-tw-connector-widgets">>
+<<tabs tabsList:"[tag[widget]sort[order]]" default:"widget/literatures-latest" class:"tc-horizontal" template:"$:/tabs/tabTemplate" state:"$:/state/tab-tw-pubconnector-widgets">>
 
 

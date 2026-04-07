@@ -4,7 +4,7 @@ tags: start doc
 title: tw-pubconnector Tutorial
 type: text/vnd.tiddlywiki
 
-<<tabs tabsList:"[tag[tutorial]!tag[advanced]sort[order]]" default:"tutorial/widgets" class:"tc-vertical" template:"$:/tabs/tabTemplate" state:"$:/state/tab-tw-connector-tutorial">>
+<<tabs tabsList:"[tag[tutorial]!tag[advanced]sort[order]]" default:"tutorial/getting-started" class:"tc-vertical" template:"$:/tabs/tabTemplate" state:"$:/state/tab-tw-pubconnector-tutorial">>
 
 
 

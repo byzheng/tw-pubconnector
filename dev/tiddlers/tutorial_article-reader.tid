@@ -1,0 +1,40 @@
+caption: Article Reader
+created: 20260407000000000
+modified: 20260407000000000
+order: 3
+tags: tutorial
+title: tutorial/article-reader
+type: text/vnd.tiddlywiki
+
+!! Article reader
+
+The article reader gives DOI-backed literature tiddlers a cleaner reading surface than raw publisher HTML.
+
+!! Workflow
+
+# Save publisher HTML for a paper and upload it through the `/literature/upload-html` route.
+# The plugin extracts the DOI from the HTML and matches it to an existing `bibtex-entry` tiddler.
+# Open the saved article at `/literature/article/<title>`.
+
+!! Reader features
+
+* Text highlighting with five reading categories.
+* Optional notes on each highlight.
+* Highlight notes rendered as wikitext when displayed.
+* Highlight note review through the `highlight-notes` widget.
+* Font size controls for long reading sessions.
+* Domain auto-linking that turns concept names into links back to the wiki.
+
+!! Domain auto-linking
+
+The article route can inject a gradual domain-linking pass so article rendering stays responsive.
+
+Open [[$:/plugins/bangyou/tw-pubconnector/settings/article]] to configure:
+
+* whether domain auto-linking is enabled
+* the filter that chooses candidate concept tiddlers
+* the ignore field used to blacklist selected concepts
+* the alias field used for alternate terms
+* whether only the first occurrence per paragraph should be linked
+
+This is useful for building concept-rich reading views without manually editing article HTML.

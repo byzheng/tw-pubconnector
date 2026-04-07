@@ -1,0 +1,13 @@
+created: 20260407000000000
+modified: 20260407000000000
+title: $:/plugins/bangyou/tw-pubconnector/documentation
+type: text/vnd.tiddlywiki
+
+; Documentation
+
+The full user documentation for tw-pubconnector is published online.
+
+* Online docs and demo: [[https://tw-pubconnector.bangyou.me|https://tw-pubconnector.bangyou.me]]
+* GitHub repository: [[https://github.com/byzheng/tw-pubconnector|https://github.com/byzheng/tw-pubconnector]]
+
+The online documentation includes installation notes, tutorials, widget syntax, article reader features, and configuration examples.

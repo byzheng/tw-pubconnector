@@ -1,0 +1,45 @@
+caption: Getting Started
+created: 20260407000000000
+modified: 20260407000000000
+order: 1
+tags: tutorial
+title: tutorial/getting-started
+type: text/vnd.tiddlywiki
+
+!! Getting Started
+
+This plugin works best when your wiki already contains literature tiddlers, colleague tiddlers, or both.
+
+!! Basic setup
+
+* Install the plugin and the BibTeX plugin if you plan to import BibTeX entries.
+* Run TiddlyWiki on Node.js so the plugin routes are available.
+* Optional: install the [[PubConnector browser extension|https://github.com/byzheng/PubConnector]] if you use browser-assisted workflows such as Google Scholar capture or image handling.
+
+!! Core tiddler types
+
+* `Colleague` tiddlers: person profiles used for publication sync.
+* `bibtex-entry` tiddlers: literature records, usually DOI-backed.
+* Domain tiddlers: concept pages used by article domain auto-linking.
+
+!! Common fields
+
+For colleague tiddlers, tw-pubconnector can use these fields when present:
+
+* `orcid`
+* `openalex`
+* `google-scholar`
+* `researcherid`
+* `scopus`
+* `url`
+
+For literature tiddlers, the most important field is:
+
+* `bibtex-doi`
+
+!! Recommended first steps
+
+# Create or clean up your colleague tiddlers.
+# Check the settings in [[$:/plugins/bangyou/tw-pubconnector/settings/authoring]].
+# Import a few papers with BibTeX.
+# Open [[tutorial/article-reader]] and [[tutorial/widgets]] to add reader and dashboard features.

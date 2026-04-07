@@ -5,13 +5,13 @@ module-type: route
 \*/
 
 /**
- * TiddlyWiki Route: GET /api/authoring/status
+ * TiddlyWiki Route: GET /authoring/status
  * 
  * Checks if there are any pending background requests across all platforms
  * 
  * Request:
  *   - Method: GET
- *   - Path: /api/authoring/status
+ *   - Path: /authoring/status
  * 
  * Response:
  *   {

@@ -49,18 +49,6 @@ Automatically update caches for authoring at the scheduled hour and minute.
 * Hour: <$edit-text tiddler="$:/config/tw-pubconnector/authoring/auto-update/hour" type="number"  default="-1" tag="input" min="-1" max="23" /> (Allowed: -1 or 0–23)
 * Minute: <$edit-text tiddler="$:/config/tw-pubconnector/authoring/auto-update/minute" type="number"  default="-1" tag="input" min="-1" max="58" /> (Allowed: -1 or 0–58). The maximum value `58` is to allow client side to process the request at the next minute.
 
-----
-
-
-!! Homepage
-
-The field `url` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. All DOIs in the homepage is assumed as author's publications.
-
-
-<$link to="$:/config/tw-pubconnector/authoring/homepage/enable">Retrieve Publication from Homepage</$link> 
-
-<$checkbox tiddler="$:/config/tw-pubconnector/authoring/homepage/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/homepage/enable">Enable Homepage</$link></$checkbox>
-
 
 ----
 !! Google Scholar
@@ -84,7 +72,7 @@ The field `google-scholar` in the tiddlers with tag `Colleague` is used to to re
 
 The field `orcid` in the tiddlers with tag `Colleague` is used to to retrieve author's publications. 
 
-<$link to="$:/config/tw-pubconnector/authoring/orcid/enable">Retrieve Publication from Web of Science</$link> 
+<$link to="$:/config/tw-pubconnector/authoring/orcid/enable">Retrieve Publication from ORCID</$link> 
 
 <$checkbox tiddler="$:/config/tw-pubconnector/authoring/orcid/enable" field="text" checked="enable" unchecked="disable" default="enable"><$link to="$:/config/tw-pubconnector/authoring/orcid/enable">Enable ORCID</$link></$checkbox>
 

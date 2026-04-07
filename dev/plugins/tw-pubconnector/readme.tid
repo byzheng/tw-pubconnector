@@ -6,10 +6,24 @@ type: text/vnd.tiddlywiki
 
 ; tw-pubconnector
 
-tw-pubconnector is a plugin for Chrome Extension [[PubConnector|https://github.com/byzheng/PubConnector]] to access the publication information from web browser Chrome 
+tw-pubconnector is a literature workflow plugin for TiddlyWiki. It combines publication sync, article reading, citation discovery, and browser-assisted capture in one plugin.
 
-* Open tiddler in the story river from different platforms (Publisher, Google Scholar).
-* Retrieve and cache authors/colleagues' publication list from different platforms.
+!! Included features
+
+* Retrieve and cache publication data for tiddlers tagged `Colleague` from OpenAlex, ORCID, Google Scholar, Web of Science, and Scopus.
+* Import BibTeX entries and connect DOI-backed papers to existing author tiddlers.
+* Upload publisher HTML and reopen articles in a cleaner TiddlyWiki reading view.
+* Highlight article text, save notes, and review saved notes later with a dedicated widget.
+* Auto-link article text back to wiki concepts using configurable Domain filters and aliases.
+* Show latest publications, references, citing papers, and highlight notes with widgets.
+* Track new citations for watched papers or colleagues with Citation Watch.
+* Communicate with [[PubConnector|https://github.com/byzheng/PubConnector]] for browser workflows such as opening tiddlers, importing records, and handling captured images.
+
+!! Documentation
+
+* Online documentation: [[tw-pubconnector.bangyou.me|https://tw-pubconnector.bangyou.me]]
+* Documentation hub in the published wiki: [[tw-pubconnector for TiddlyWiki]]
+* Tutorial hub in the published wiki: [[tw-pubconnector Tutorial]]
 
 ;Code and demo
 
@@ -17,4 +31,10 @@ For learning plugin features, syntax, tutorial and examples see the plugin demo 
 
 * Demo: https://tw-pubconnector.bangyou.me
 * Code: https://github.com/byzheng/tw-pubconnector
+
+!! Runtime notes
+
+* Most routes require TiddlyWiki on Node.js.
+* BibTeX import depends on `$:/plugins/tiddlywiki/bibtex`.
+* Some authoring providers require API keys or browser-assisted workflows.
 

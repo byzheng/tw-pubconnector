@@ -1,0 +1,32 @@
+created: 20260407000000000
+modified: 20260407000000000
+order: 2
+tags: doc info
+title: Feature Overview
+type: text/vnd.tiddlywiki
+
+tw-pubconnector is easiest to understand as a set of connected research workflows rather than a collection of separate utilities.
+
+!! Authoring and metadata sync
+
+* Treat tiddlers tagged `Colleague` as author profiles.
+* Pull works from ORCID, OpenAlex, Google Scholar, Web of Science, and Scopus.
+* Cache retrieved data so repeated requests are cheaper and rate-limit friendly.
+* Reuse DOI lookups to connect imported literature with existing colleague tiddlers.
+
+!! Literature import and article reading
+
+* Import BibTeX into `bibtex-entry` tiddlers.
+* Upload publisher HTML and match it back to a paper by DOI.
+* Open a cleaned article page at `/literature/article/<title>`.
+* Highlight text, attach notes, review notes later, and adjust font size while reading.
+* Auto-link domain terms in article text back to wiki tiddlers with configurable filters and aliases.
+
+!! Discovery widgets and citation watch
+
+* Show the latest literature added to your wiki.
+* Pull references and citing papers for DOI-backed items.
+* Review saved highlight notes from a paper without reopening the article first.
+* Track recent citations for watched papers or colleagues using Citation Watch.
+
+Continue with [[Documentation Map]] for the full guide structure.

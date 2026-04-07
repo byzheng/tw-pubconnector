@@ -1,0 +1,33 @@
+caption: Cites
+created: 20260407000000000
+modified: 20260407000000000
+order: 3
+tags: widget
+title: widget/cites
+type: text/vnd.tiddlywiki
+
+!! Cites Widget
+
+Display papers that cite a DOI-backed literature tiddler.
+
+!! Syntax
+
+```
+<$cites tiddler="My Paper" />
+```
+
+!! Attributes
+
+|!Attribute |!Type |!Description |
+|tiddler |optional|Target paper title. Defaults to the current tiddler |
+
+!! Requirements
+
+* The target tiddler must exist.
+* The target tiddler must have a valid `bibtex-doi` field.
+
+!! Behavior
+
+* The widget calls the `/literature/cites/<doi>` route.
+* Results are rendered as literature cards.
+* This is useful for a local “cited by” section on paper pages.

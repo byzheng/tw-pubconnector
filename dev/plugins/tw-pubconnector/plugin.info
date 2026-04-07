@@ -1,12 +1,12 @@
 {
     "title": "$:/plugins/bangyou/tw-pubconnector",
     "name": "tw-pubconnector",
-    "description": "A small plugin for Chrome Extension PubConnector",
+    "description": "Research and literature workflow plugin for TiddlyWiki with author sync, article reading, and citation tracking",
     "author": "Bangyou Zheng",
     "version": "0.5.27",
     "core-version": ">5.1.23",
     "source": "https://tw-pubconnector.bangyou.me",
-    "list": "readme settings license",
+    "list": "readme documentation settings license",
     "parent-plugin": "",
     "plugin-type": "plugin"
 }

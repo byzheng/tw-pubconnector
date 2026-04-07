@@ -1,0 +1,32 @@
+caption: Citation Watch
+created: 20260407000000000
+modified: 20260407000000000
+order: 4
+tags: tutorial
+title: tutorial/citation-watch
+type: text/vnd.tiddlywiki
+
+!! Citation Watch
+
+Citation Watch tracks new citations for important papers or important people.
+
+!! How it decides what to watch
+
+* Papers: tiddlers with the configured watch tag and a `bibtex-doi` field.
+* People: tiddlers tagged both `Colleague` and the configured watch tag.
+
+When watching a colleague, the plugin collects that person’s DOI-backed papers and then asks the configured citation source for recent citations.
+
+!! Configuration
+
+Use [[$:/plugins/bangyou/tw-pubconnector/settings/citationwatch]] to control:
+
+* enable or disable Citation Watch
+* the watch tag name
+* whether to watch papers, colleagues, or both
+
+!! Current behavior
+
+* Citation Watch is integrated into the broader latest-publication workflow.
+* Recent citation data is retrieved through the citation watch API path and merged into results where needed.
+* Tagged papers and colleagues can therefore surface in the same research dashboard patterns as other recent items.

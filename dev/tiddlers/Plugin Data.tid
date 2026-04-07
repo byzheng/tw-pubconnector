@@ -5,8 +5,8 @@ title: Plugin Data
 type: text/vnd.tiddlywiki
 
 <!-- ONLY set your plugin name and reponame -->
-\define pluginName() tw-connector
-\define reopName() tw-connector
+\define pluginName() tw-pubconnector
+\define reopName() tw-pubconnector
 
 
 <!----- do NOT change below ----->

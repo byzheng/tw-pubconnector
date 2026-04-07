@@ -1,7 +1,7 @@
 created: 20221021042001530
 modified: 20251224003553949
 tags: doc start
-title: tw-pubconnector for Tiddlywiki
+title: tw-pubconnector for TiddlyWiki
 type: text/vnd.tiddlywiki
 
 \import [[Plugin Data]]
@@ -25,14 +25,20 @@ type: text/vnd.tiddlywiki
 <<<
 
 !! Tutorials
-> No user interactions are required for this plugin.
+
+Use these pages as the main entry points for the published documentation:
+
+* [[Install]]
+* [[Feature Overview]]
+* [[Documentation Map]]
+* [[tw-pubconnector Tutorial]]
 
 !! Code and demo
 
 * Demo: <<plugindemoUrl>>
 * Code: <<plugincodeUrl>>
 
-<$list filter="[tag[doc]tag[info]has[text]!has[draft.of]]">
+<$list filter="[tag[doc]tag[info]has[text]!has[draft.of]sort[order]]">
 <h2>{{!!title}}</h2>
 <blockquote><$transclude tiddler=<<currentTiddler>> mode=block/></blockquote>
 </$list>

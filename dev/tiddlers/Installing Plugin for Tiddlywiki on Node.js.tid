@@ -1,14 +1,14 @@
 created: 20211015160346125
 modified: 20221028054257742
 tags: doc
-title: Installing Plugin for Tiddlywiki on Node.js
+title: Installing Plugin for TiddlyWiki on Node.js
 type: text/vnd.tiddlywiki
 
 \import [[Plugin Data]]
 
-''III. Tiddlywiki + Node.js''
+''III. TiddlyWiki + Node.js''
 
-There are two methods in which custom plugins that are not part of official Tiddlywiki's plugin library can be installed when using Tiddlywiki under Node.js (also called ''client-server configuration'').
+There are two ways to install a custom plugin that is not part of the official TiddlyWiki plugin library when running TiddlyWiki under Node.js.
 
 * ''local'' installation in only a specific wiki
 * ''global'' installation on the server, so every wiki running on Node.js has access to the plugin
@@ -39,7 +39,7 @@ vi. finished installing for server!
 
 ''Extra step for global installation (III.B)''<br>
 
-After installing the a plugin ''globally'' in your Node.js server (the client-server configuration), to use it in any specific wiki, add it to the `tiddlywiki.info` file of that wiki:
+After installing a plugin ''globally'' on your Node.js server, enable it in a specific wiki by adding it to that wiki's `tiddlywiki.info` file:
 
 # Open the specific wiki folder of choice
 # Edit the `tiddlywiki.info` file (it is in JSON format) and locate the plugins section (see below)

@@ -1,12 +1,15 @@
 created: 20200131150639151
 modified: 20221028053622258
+order: 4
 tags: doc info
 title: History
 type: text/vnd.tiddlywiki
+
+Recent changes are summarised below.
 
 <$list filter="[[ChangeLog]get[text]split[!!]first[2]addprefix[!!]]">
 
 <<currentTiddler>>
 </$list>
 
-For all changes see [[ChangeLog]]
+For the complete release record, see [[ChangeLog]].

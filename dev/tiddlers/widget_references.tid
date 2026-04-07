@@ -1,0 +1,33 @@
+caption: References
+created: 20260407000000000
+modified: 20260407000000000
+order: 2
+tags: widget
+title: widget/references
+type: text/vnd.tiddlywiki
+
+!! References Widget
+
+Display the reference list for a DOI-backed literature tiddler.
+
+!! Syntax
+
+```
+<$references tiddler="My Paper" />
+```
+
+!! Attributes
+
+|!Attribute |!Type |!Description |
+|tiddler |optional|Target paper title. Defaults to the current tiddler |
+
+!! Requirements
+
+* The target tiddler must exist.
+* The target tiddler must have a valid `bibtex-doi` field.
+
+!! Behavior
+
+* The widget calls the `/literature/references/<doi>` route.
+* Returned items are rendered as literature cards.
+* If the DOI is missing or invalid, the widget shows an explanatory message.

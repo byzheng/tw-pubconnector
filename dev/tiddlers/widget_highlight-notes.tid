@@ -1,0 +1,30 @@
+caption: Highlight Notes
+created: 20260407000000000
+modified: 20260407000000000
+order: 4
+tags: widget
+title: widget/highlight-notes
+type: text/vnd.tiddlywiki
+
+!! Highlight Notes Widget
+
+Review saved article highlights and notes without reopening the article first.
+
+!! Syntax
+
+```
+<$highlight-notes tiddler="My Paper" emptyMessage="No saved notes yet." />
+```
+
+!! Attributes
+
+|!Attribute |!Type |!Description |
+|tiddler |optional|Target literature tiddler. Defaults to the current tiddler |
+|emptyMessage |optional|Message shown when there are no saved highlights or notes |
+
+!! Behavior
+
+* The widget reads saved highlight data from `/literature/highlight/<title>`.
+* Notes are sorted by their article position.
+* Each card shows the highlight category, optional note text, and an excerpt.
+* The widget also adds links back to the full article and to the specific highlight anchor when available.

@@ -16,18 +16,26 @@ tw-pubconnector is a TiddlyWiki plugin for literature-centric research workflows
 
 ### Authoring And Publication Sync
 
-The plugin treats tiddlers tagged `Colleague` as author profiles and uses platform-specific fields such as `orcid`, `openalex`, `google-scholar`, `researcherid`, `scopus`, and `url` to retrieve publication data. Cached data is reused to reduce repeated requests, and scheduled updates can be enabled from the Control Panel.
+The plugin treats tiddlers tagged `Colleague` as author profiles and uses platform-specific fields such as 
+
+* `orcid` for [ORCID](https://orcid.org/)
+* `openalex` for [OpenAlex](https://openalex.org/)
+* `google-scholar` for [Google Scholar](https://scholar.google.com/)
+* `researcherid` for [ResearcherID](https://www.researcherid.com/)
+* `scopus` for [Scopus](https://www.scopus.com/)
+
+Cached data is reused to reduce repeated requests, and scheduled updates can be enabled from the Control Panel.
 
 ### Literature Import And Reader
 
-BibTeX can be posted to the `/literatures` route to create `bibtex-entry` tiddlers. Saved publisher HTML can be uploaded to `/literature/upload-html`, matched back to a DOI, and reopened through `/literature/article/<title>` in a cleaner reading view.
+BibTeX can be posted to the `/literatures` route to create `bibtex-entry` tiddlers. Saved publisher HTML can be uploaded to `/literature/upload-html`, matched back to a DOI, and reopened through `/literature/article/<title>` in a cleaner reading view. [PubConnector](https://github.com/byzheng/PubConnector) and [SingleFile](https://chromewebstore.google.com/detail/singlefile/mpiodijhokgodhhofbcjdecpffjipkle) work well together for this capture flow.
 
 The article reader includes:
 
 - text highlights with categories
 - inline notes with rendered wikitext
 - a note review widget
-- domain auto-linking using a configurable TiddlyWiki filter
+- auto-linking using a configurable TiddlyWiki filter
 - per-paragraph first-match control, aliases, and ignore rules
 - article font controls
 
@@ -36,8 +44,6 @@ The article reader includes:
 The plugin ships user-facing widgets for:
 
 - latest literature lists
-- references for a DOI-backed paper
-- citing papers for a DOI-backed paper
 - highlight note review for a saved article
 - browser message and image helper workflows
 
@@ -57,7 +63,7 @@ Citation Watch monitors papers and colleagues tagged with a configured watch tag
 - TiddlyWiki on Node.js for the server routes
 - The BibTeX plugin for BibTeX import workflows
 - Optional API keys for platforms such as Web of Science and Scopus
-- Optional Chrome extension [PubConnector](https://github.com/byzheng/PubConnector) for browser-assisted workflows such as Scholar capture and image handling
+- Chrome extension [PubConnector](https://github.com/byzheng/PubConnector) for browser-assisted workflows such as Scholar capture and image handling
 
 ## Development Tests
 

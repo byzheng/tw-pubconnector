@@ -673,6 +673,23 @@ Features:
         toolbar.id = 'tw-hl-toolbar';
         toolbar.style.display = 'none';
 
+        var noteBtn = document.createElement('button');
+        noteBtn.className = 'tw-hl-icon-btn';
+        noteBtn.title = 'Highlight with note';
+        noteBtn.textContent = '\u270E'; // ✎
+        noteBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (pendingRange) {
+                showNewNotePopup(pendingCX, pendingCY, pendingRange);
+            }
+            hideToolbar();
+        });
+        toolbar.appendChild(noteBtn);
+
+        var sep = document.createElement('div');
+        sep.className = 'tw-hl-sep';
+        toolbar.appendChild(sep);
+
         COLORS.forEach(function (c) {
             var btn = document.createElement('button');
             btn.className = 'tw-hl-swatch';
@@ -688,23 +705,6 @@ Features:
             });
             toolbar.appendChild(btn);
         });
-
-        var sep = document.createElement('div');
-        sep.className = 'tw-hl-sep';
-        toolbar.appendChild(sep);
-
-        var noteBtn = document.createElement('button');
-        noteBtn.className = 'tw-hl-icon-btn';
-        noteBtn.title = 'Highlight with note';
-        noteBtn.textContent = '\u270E'; // ✎
-        noteBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (pendingRange) {
-                showNewNotePopup(pendingCX, pendingCY, pendingRange);
-            }
-            hideToolbar();
-        });
-        toolbar.appendChild(noteBtn);
 
         document.body.appendChild(toolbar);
     }

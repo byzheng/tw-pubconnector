@@ -14,7 +14,8 @@ This plugin works best when your wiki already contains literature tiddlers, coll
 
 * Install the plugin and the BibTeX plugin if you plan to import BibTeX entries.
 * Run TiddlyWiki on Node.js so the plugin routes are available.
-* Optional: install the [[PubConnector browser extension|https://github.com/byzheng/PubConnector]] if you use browser-assisted workflows such as Google Scholar capture or image handling.
+* Optional: install the [[PubConnector browser extension|https://github.com/byzheng/PubConnector]] if you use browser-assisted workflows such as Google Scholar capture, BibTeX import, or image handling.
+* Optional: install [[SingleFile|https://chromewebstore.google.com/detail/singlefile/mpiodijhokgodhhofbcjdecpffjipkle]] if you save publisher pages for the article reader.
 
 !! Core tiddler types
 
@@ -31,7 +32,6 @@ For colleague tiddlers, tw-pubconnector can use these fields when present:
 * `google-scholar`
 * `researcherid`
 * `scopus`
-* `url`
 
 For literature tiddlers, the most important field is:
 

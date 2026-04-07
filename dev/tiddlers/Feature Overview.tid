@@ -16,8 +16,8 @@ tw-pubconnector is easiest to understand as a set of connected research workflow
 
 !! Literature import and article reading
 
-* Import BibTeX into `bibtex-entry` tiddlers.
-* Upload publisher HTML and match it back to a paper by DOI.
+* Import BibTeX into `bibtex-entry` tiddlers through PubConnector-assisted workflows.
+* Upload publisher HTML, typically saved with SingleFile, and match it back to a paper by DOI.
 * Open a cleaned article page at `/literature/article/<title>`.
 * Highlight text, attach notes, review notes later, and adjust font size while reading.
 * Auto-link domain terms in article text back to wiki tiddlers with configurable filters and aliases.

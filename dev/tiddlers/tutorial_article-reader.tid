@@ -12,9 +12,11 @@ The article reader gives DOI-backed literature tiddlers a cleaner reading surfac
 
 !! Workflow
 
-# Save publisher HTML for a paper and upload it through the `/literature/upload-html` route.
+# Save publisher HTML for a paper, typically with SingleFile, and upload it through the `/literature/upload-html` route.
 # The plugin extracts the DOI from the HTML and matches it to an existing `bibtex-entry` tiddler.
 # Open the saved article at `/literature/article/<title>`.
+
+PubConnector and SingleFile work well together for this capture flow: SingleFile preserves the publisher page, and PubConnector can stay in the loop for the related browser-side workflow.
 
 !! Reader features
 

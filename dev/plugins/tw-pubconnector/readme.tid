@@ -11,8 +11,8 @@ tw-pubconnector is a literature workflow plugin for TiddlyWiki. It combines publ
 !! Included features
 
 * Retrieve and cache publication data for tiddlers tagged `Colleague` from OpenAlex, ORCID, Google Scholar, Web of Science, and Scopus.
-* Import BibTeX entries and connect DOI-backed papers to existing author tiddlers.
-* Upload publisher HTML and reopen articles in a cleaner TiddlyWiki reading view.
+* Import BibTeX entries and connect DOI-backed papers to existing author tiddlers through [[PubConnector|https://github.com/byzheng/PubConnector]].
+* Upload publisher HTML and reopen articles in a cleaner TiddlyWiki reading view through [[SingleFile|https://chromewebstore.google.com/detail/singlefile/mpiodijhokgodhhofbcjdecpffjipkle]] and [[PubConnector|https://github.com/byzheng/PubConnector]].
 * Highlight article text, save notes, and review saved notes later with a dedicated widget.
 * Auto-link article text back to wiki concepts using configurable Domain filters and aliases.
 * Show latest publications, references, citing papers, and highlight notes with widgets.
@@ -37,4 +37,5 @@ For learning plugin features, syntax, tutorial and examples see the plugin demo 
 * Most routes require TiddlyWiki on Node.js.
 * BibTeX import depends on `$:/plugins/tiddlywiki/bibtex`.
 * Some authoring providers require API keys or browser-assisted workflows.
+* Saved article HTML workflows are designed around SingleFile and PubConnector.
 

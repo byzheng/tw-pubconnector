@@ -26,6 +26,14 @@ Get literature article for a tiddler
 	exports.platforms = ["node"];
 	exports.path = /^\/literature\/article\/(.+)$/;
 
+	function getConfigText(title, fallback) {
+		const tiddler = $tw.wiki.getTiddler(title);
+		if (!tiddler || !tiddler.fields || typeof tiddler.fields.text !== "string") {
+			return fallback;
+		}
+		return tiddler.fields.text;
+	}
+
 	exports.handler = function (request, response, state) {
 		const match = request.url.match(exports.path);
 		if (!match || match.length < 2) {
@@ -110,6 +118,42 @@ Get literature article for a tiddler
 				console.log("Invalid site configuration");
 				return;
 			}
+			const domainLinkEnabled = getConfigText("$:/config/tw-pubconnector/article/domain-link/enable", "enable") === "enable";
+			const domainFilter = getConfigText("$:/config/tw-pubconnector/article/domain-link/filter", "[tag[Domain]]").trim();
+			const ignoreField = getConfigText("$:/config/tw-pubconnector/article/domain-link/ignore-field", "link-ignore").trim();
+			const akaField = getConfigText("$:/config/tw-pubconnector/article/domain-link/aka-field", "aka").trim();
+			const paragraphFirstOnly = getConfigText("$:/config/tw-pubconnector/article/domain-link/paragraph-first", "enable") === "enable";
+			let domainTitles = [];
+
+			if (domainLinkEnabled && domainFilter) {
+				domainTitles = $tw.wiki.filterTiddlers(domainFilter) || [];
+				if (ignoreField) {
+					domainTitles = domainTitles.filter(function (title) {
+						const domainTiddler = $tw.wiki.getTiddler(title);
+						const fields = domainTiddler && domainTiddler.fields;
+						return !(fields && Object.prototype.hasOwnProperty.call(fields, ignoreField));
+					});
+				}
+			}
+			const domainLinks = domainTitles.map(function (title) {
+				const domainTiddler = $tw.wiki.getTiddler(title);
+				const rawAliases = akaField && domainTiddler && domainTiddler.fields ? domainTiddler.fields[akaField] : "";
+				const aliases = rawAliases ? $tw.utils.parseStringArray(rawAliases) : [];
+				const seenTerms = Object.create(null);
+				const terms = [title].concat(aliases).filter(function (term) {
+					if (typeof term !== "string") return false;
+					term = term.trim();
+					if (!term) return false;
+					const key = term.toLowerCase();
+					if (seenTerms[key]) return false;
+					seenTerms[key] = true;
+					return true;
+				});
+				return {
+					title: title,
+					terms: terms
+				};
+			});
 			document = utils.getArticle(document, siteConfig);
 
 			// Relax the CSP from the saved HTML so that injected scripts can call
@@ -134,11 +178,24 @@ Get literature article for a tiddler
 			// Inject script tag before </body>
 			const hightlightScript = document.createElement('script');
 			const scriptText = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/highlight.js", "");
+			const domainLinkScript = document.createElement('script');
+			const domainLinkText = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/script/domain-link.js", "");
+			const bootstrapScript = document.createElement('script');
+			bootstrapScript.textContent =
+				"window.__TW_PUBCONNECTOR_DOMAIN_LINKS = " + JSON.stringify(domainLinks) + ";" +
+				"window.__TW_PUBCONNECTOR_DOMAIN_TITLES = " + JSON.stringify(domainTitles) + ";" +
+				"window.__TW_PUBCONNECTOR_DOMAIN_LINK_OPTIONS = " + JSON.stringify({ firstOccurrencePerScope: paragraphFirstOnly }) + ";";
+			document.body.appendChild(bootstrapScript);
 
 
 			if (scriptText) {
 				hightlightScript.textContent = scriptText.fields.text || "";
 				document.body.appendChild(hightlightScript);
+			}
+
+			if (domainLinkEnabled && domainLinkText) {
+				domainLinkScript.textContent = domainLinkText.fields.text || "";
+				document.body.appendChild(domainLinkScript);
 			}
 
 

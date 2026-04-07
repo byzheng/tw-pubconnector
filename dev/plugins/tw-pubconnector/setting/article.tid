@@ -1,0 +1,52 @@
+caption: Article
+created: 20260407000000000
+modified: 20260407000000000
+tags: $:/tags/ControlPanel/Settings/tw-pubconnector
+title: $:/plugins/bangyou/tw-pubconnector/settings/article
+type: text/vnd.tiddlywiki
+
+!! Article
+
+Configure article reading helpers injected into literature pages.
+
+----
+
+!! Domain Auto-linking
+
+Turn Domain tiddlers into inline links inside article text.
+
+<$checkbox tiddler="$:/config/tw-pubconnector/article/domain-link/enable" field="text" checked="enable" unchecked="disable" default="enable">
+  <$link to="$:/config/tw-pubconnector/article/domain-link/enable">Enable Domain Auto-linking</$link>
+</$checkbox>
+
+----
+
+<$link to="$:/config/tw-pubconnector/article/domain-link/filter">Filter used for Domain linking</$link>
+
+<$edit-text tiddler="$:/config/tw-pubconnector/article/domain-link/filter" field="text" default="[tag[Domain]]" tag="input" />
+
+Any tiddlers returned by this TiddlyWiki filter are considered link targets in article text.
+
+----
+
+<$link to="$:/config/tw-pubconnector/article/domain-link/ignore-field">Ignore field name</$link>
+
+<$edit-text tiddler="$:/config/tw-pubconnector/article/domain-link/ignore-field" field="text" default="link-ignore" tag="input" />
+
+If a Domain tiddler has this field, it will be excluded from auto-linking.
+
+----
+
+<$link to="$:/config/tw-pubconnector/article/domain-link/aka-field">Alias field name</$link>
+
+<$edit-text tiddler="$:/config/tw-pubconnector/article/domain-link/aka-field" field="text" default="aka" tag="input" />
+
+This field is parsed as a TiddlyWiki list and used as alternative link terms.
+
+----
+
+<$checkbox tiddler="$:/config/tw-pubconnector/article/domain-link/paragraph-first" field="text" checked="enable" unchecked="disable" default="enable">
+  <$link to="$:/config/tw-pubconnector/article/domain-link/paragraph-first">Link only first occurrence per paragraph</$link>
+</$checkbox>
+
+Repeated matches of the same Domain term in one paragraph can be left plain to reduce noise.

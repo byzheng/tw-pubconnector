@@ -57,6 +57,7 @@ Citation Watch monitors papers and colleagues tagged with a configured watch tag
 - Source repository: https://github.com/byzheng/tw-pubconnector
 - Plugin documentation entry point in the published wiki: `tw-pubconnector for TiddlyWiki`
 - Tutorial hub in the published wiki: `tw-pubconnector Tutorial`
+- Developer route reference in the published wiki: `Developer Routes`
 
 ## Requirements
 

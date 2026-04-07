@@ -1,0 +1,83 @@
+created: 20260407000000000
+modified: 20260407104055540
+order: 5
+tags: doc
+title: Developer Routes
+type: text/vnd.tiddlywiki
+
+This page documents the stable, developer-facing HTTP routes used by widgets, browser scripts, the PubConnector extension, and local automation.
+
+Routes listed here are part of the intended integration surface. Internal helper routes and test-only routes are not part of the public contract and may change without notice.
+
+!! Literature import and reading
+
+; `POST /literatures`
+: Import one or more BibTeX entries and create new `bibtex-entry` tiddlers.
+: Request body: raw BibTeX text, or JSON with a `bibtex` field.
+: Success response: JSON containing `status`, `code`, and created `tiddlers`.
+
+; `GET /literatures/latest?days=60`
+: Return recent literature items for widgets or dashboards.
+: Query parameter: `days` is optional and defaults to the route's configured fallback.
+: Success response: JSON containing `status`, `code`, and `items`.
+
+; `POST /literature/upload-html`
+: Upload a publisher HTML file and associate it with an existing literature tiddler by DOI.
+: Request format: `multipart/form-data` with an uploaded file and a `url` field.
+: Success response: JSON confirming the HTML file was processed and saved.
+
+; `GET /literature/article/<title>`
+: Open the cleaned article reader for a saved literature tiddler.
+: Path parameter: URL-encoded tiddler title.
+: Success response: HTML page for in-browser reading rather than JSON.
+
+!! Metadata and lookup
+
+; `POST /literature/find-doi`
+: Find a DOI from article metadata.
+: Request body: JSON with `title`, and optional `author` and `publisher` fields.
+: Success response: JSON containing `status`, `code`, and DOI lookup `results`.
+
+; `GET /literature/crossref/<doi>`
+: Fetch Crossref work metadata for a DOI.
+: Path parameter: URL-encoded DOI.
+: Success response: JSON containing `status`, `code`, and Crossref `data`.
+
+; `GET /literature/references/<doi>`
+: Fetch reference data for a DOI-backed paper.
+: Path parameter: URL-encoded DOI.
+: Success response: JSON containing `status`, `code`, and reference `data`.
+
+; `GET /literature/<doi>/cites`
+: Fetch citation data for a DOI-backed paper.
+: Path parameter: URL-encoded DOI.
+: Success response: JSON containing `status`, `code`, citation `count`, and citation `data`.
+
+!! Reading state and highlights
+
+; `POST /literature/mark-read`
+: Mark a DOI as read in the reading cache.
+: Request body: JSON with a `doi` field.
+: Success response: JSON containing `status`, `code`, and the stored DOI.
+
+; `GET /literature/highlight/<title>`
+: Read saved highlight data for a literature tiddler.
+: Path parameter: URL-encoded tiddler title.
+: Success response: JSON array of highlights. Returns an empty array when no highlights have been saved yet.
+
+; `POST /literature/highlight/<title>`
+: Save highlight data for a literature tiddler.
+: Path parameter: URL-encoded tiddler title.
+: Request body: JSON array of highlight objects.
+: Success response: JSON containing `ok` and the saved highlight `count`.
+
+; `POST /literature/highlight-render`
+: Render a short TiddlyWiki wikitext note snippet to HTML for note previews.
+: Request body: JSON with a `text` field.
+: Success response: JSON containing rendered `html`.
+
+!! Documentation conventions
+
+* Document public routes here when they form part of the integration surface.
+* Keep route module header comments as the source of truth for detailed request and response behavior.
+* For each new public route, record the method, path, request shape, response shape, and one example request.

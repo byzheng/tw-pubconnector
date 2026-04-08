@@ -50,6 +50,7 @@ Features:
     var fontScale        = 1;
     var activeNoteHighlight = null;
     var activeNoteMark = null;
+    var fontControlsCollapseTimer = null;
 
     // -----------------------------------------------------------------
     // Tiddler name from URL
@@ -146,6 +147,23 @@ Features:
                 label.textContent = Math.round(fontScale * 100) + '%';
             }
         }
+    }
+
+    function setFontControlsInteractive(isInteractive) {
+        if (!fontControls) return;
+        fontControls.classList.toggle('tw-hl-is-passive', !isInteractive);
+    }
+
+    function setFontControlsExpanded(isExpanded) {
+        if (!fontControls) return;
+        fontControls.classList.toggle('tw-hl-is-collapsed', !isExpanded);
+    }
+
+    function scheduleFontControlsCollapse(delay) {
+        clearTimeout(fontControlsCollapseTimer);
+        fontControlsCollapseTimer = window.setTimeout(function () {
+            setFontControlsExpanded(false);
+        }, delay || 1600);
     }
 
     function changeFontScale(delta) {
@@ -503,14 +521,18 @@ Features:
     function buildFontControls() {
         fontControls = document.createElement('div');
         fontControls.id = 'tw-hl-font-controls';
+        fontControls.className = 'tw-hl-is-collapsed';
 
         var smallerBtn = document.createElement('button');
         smallerBtn.type = 'button';
+        smallerBtn.className = 'tw-hl-font-step';
         smallerBtn.textContent = 'A-';
         smallerBtn.title = 'Smaller article font';
         smallerBtn.addEventListener('click', function (e) {
             e.stopPropagation();
+            setFontControlsExpanded(true);
             changeFontScale(-0.1);
+            scheduleFontControlsCollapse();
         });
 
         var resetBtn = document.createElement('button');
@@ -519,23 +541,53 @@ Features:
         resetBtn.title = 'Reset article font to 100%';
         resetBtn.addEventListener('click', function (e) {
             e.stopPropagation();
+            setFontControlsExpanded(true);
             resetFontScale();
+            scheduleFontControlsCollapse();
         });
 
         var largerBtn = document.createElement('button');
         largerBtn.type = 'button';
+        largerBtn.className = 'tw-hl-font-step';
         largerBtn.textContent = 'A+';
         largerBtn.title = 'Larger article font';
         largerBtn.addEventListener('click', function (e) {
             e.stopPropagation();
+            setFontControlsExpanded(true);
             changeFontScale(0.1);
+            scheduleFontControlsCollapse();
         });
 
         fontControls.appendChild(smallerBtn);
         fontControls.appendChild(resetBtn);
         fontControls.appendChild(largerBtn);
+
+        fontControls.addEventListener('mouseenter', function () {
+            clearTimeout(fontControlsCollapseTimer);
+            setFontControlsExpanded(true);
+        });
+
+        fontControls.addEventListener('mouseleave', function () {
+            scheduleFontControlsCollapse(900);
+        });
+
+        fontControls.addEventListener('focusin', function () {
+            clearTimeout(fontControlsCollapseTimer);
+            setFontControlsExpanded(true);
+        });
+
+        fontControls.addEventListener('focusout', function () {
+            scheduleFontControlsCollapse(900);
+        });
+
+        fontControls.addEventListener('touchstart', function () {
+            clearTimeout(fontControlsCollapseTimer);
+            setFontControlsExpanded(true);
+        }, { passive: true });
+
         document.body.appendChild(fontControls);
         applyFontScale();
+        scheduleFontControlsCollapse(1400);
     }
 
     // -----------------------------------------------------------------
@@ -954,17 +1006,26 @@ Features:
             if (!text) {
                 hideToolbar();
                 pendingRange = null;
+                setFontControlsInteractive(true);
+                return;
+            }
+            if (!sel.rangeCount) {
+                hideToolbar();
+                pendingRange = null;
+                setFontControlsInteractive(true);
                 return;
             }
             pendingRange = sel.getRangeAt(0).cloneRange();
             pendingCX    = e.clientX;
             pendingCY    = e.clientY;
             showToolbar(e.clientX, e.clientY);
+            setFontControlsInteractive(true);
         }, 10);
     });
 
     document.addEventListener('mousedown', function (e) {
         if (isInsideHighlightUi(e.target)) return;
+        setFontControlsInteractive(false);
         hideToolbar();
         if (notePopup) notePopup.style.display = 'none';
         hideNoteTooltip();

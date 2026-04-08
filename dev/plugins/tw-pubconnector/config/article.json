@@ -30,5 +30,21 @@
         },
         "springer.com": {
             "articleSelector": "main.js-main-column"
+        },
+        "pnas.org": {
+            "articleSelector": "article[data-type='research-article']",
+            "removeSelectors": [
+                "nav#article_sections_menu",
+                "aside.core-special-feature",
+                "div[data-core-nav='header']",
+                "div.share__block"
+            ]
+        },
+        "frontiersin.org": {
+            "articleSelector": "main",
+            "removeSelectors": [
+                "div#header",
+                "div#footer"
+            ]
         }
 }

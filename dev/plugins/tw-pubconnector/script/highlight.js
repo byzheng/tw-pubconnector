@@ -423,11 +423,85 @@ Features:
         return changed;
     }
 
+    function bindHighlightMark(mark, h) {
+        mark.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (h.note) {
+                showNoteTooltip(mark, h);
+            } else {
+                showEditPopup(mark, h, e.clientX, e.clientY);
+            }
+        });
+    }
+
+    function getHighlightMarks(id) {
+        if (!id) return [];
+        return Array.prototype.slice.call(document.querySelectorAll('mark[data-highlight-id="' + id.replace(/"/g, '\\"') + '"]'));
+    }
+
+    function updateHighlightMarks(h) {
+        getHighlightMarks(h.id).forEach(function (mark) {
+            mark.style.backgroundColor = h.color;
+            mark.setAttribute('data-category', getColorName(h.color));
+            if (h.note) {
+                mark.setAttribute('data-note', h.note);
+            } else {
+                mark.removeAttribute('data-note');
+            }
+        });
+    }
+
+    function getHighlightRanges(range) {
+        var root = range.commonAncestorContainer;
+        if (root.nodeType === Node.TEXT_NODE) {
+            root = root.parentNode;
+        }
+        if (!root) return [];
+
+        var walker = document.createTreeWalker(
+            root,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function (node) {
+                    if (!node || !node.textContent || !node.textContent.trim()) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    if (!range.intersectsNode(node)) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    if (isInsideTwIcon(node)) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    var parent = node.parentElement;
+                    if (parent && parent.tagName === 'MARK' && parent.hasAttribute('data-highlight-id')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+
+        var ranges = [];
+        var currentNode;
+        while ((currentNode = walker.nextNode())) {
+            var startOffset = currentNode === range.startContainer ? range.startOffset : 0;
+            var endOffset = currentNode === range.endContainer ? range.endOffset : currentNode.textContent.length;
+            if (endOffset <= startOffset) continue;
+
+            var textRange = document.createRange();
+            textRange.setStart(currentNode, startOffset);
+            textRange.setEnd(currentNode, endOffset);
+            ranges.push(textRange);
+        }
+
+        return ranges;
+    }
+
     // -----------------------------------------------------------------
     // DOM highlight application
     // -----------------------------------------------------------------
 
-    /** Wrap the given Range in a <mark> for highlight h, wiring the click handler. */
+    /** Wrap the given Range in one or more <mark> nodes for highlight h. */
     function applyHighlightToDOM(h) {
         var range;
         if (h.anchor) {
@@ -440,29 +514,31 @@ Features:
             console.warn('[tw-highlight] Cannot apply highlight:', h.id);
             return;
         }
-        var mark = document.createElement('mark');
-        mark.style.backgroundColor = h.color;
-        mark.style.cursor = 'pointer';
-        mark.setAttribute('data-highlight-id', h.id);
-        mark.setAttribute('data-category', getColorName(h.color));
-        if (h.note) mark.setAttribute('data-note', h.note);
-
-        try {
-            mark.appendChild(range.extractContents());
-            range.insertNode(mark);
-        } catch (e) {
-            console.warn('[tw-highlight] Failed to wrap range:', h.id, e);
+        var ranges = getHighlightRanges(range);
+        if (!ranges.length) {
+            console.warn('[tw-highlight] Cannot split range into text fragments:', h.id);
             return;
         }
 
-        mark.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (h.note) {
-                showNoteTooltip(mark, h);
-            } else {
-                showEditPopup(mark, h, e.clientX, e.clientY);
+        for (var i = ranges.length - 1; i >= 0; i--) {
+            var fragmentRange = ranges[i];
+            var mark = document.createElement('mark');
+            mark.style.backgroundColor = h.color;
+            mark.style.cursor = 'pointer';
+            mark.setAttribute('data-highlight-id', h.id);
+            mark.setAttribute('data-category', getColorName(h.color));
+            if (h.note) mark.setAttribute('data-note', h.note);
+
+            try {
+                mark.appendChild(fragmentRange.extractContents());
+                fragmentRange.insertNode(mark);
+            } catch (e) {
+                console.warn('[tw-highlight] Failed to wrap range fragment:', h.id, e);
+                continue;
             }
-        });
+
+            bindHighlightMark(mark, h);
+        }
     }
 
     /** Apply all stored highlights. Order is irrelevant with text-quote anchors. */
@@ -502,15 +578,16 @@ Features:
         tooltipHideTimer = window.setTimeout(hideNoteTooltip, delay || 1000);
     }
 
-    /** Remove highlight from the highlights array and unwrap its <mark> node. */
-    function removeHighlight(id, markEl) {
+    /** Remove highlight from the highlights array and unwrap all of its <mark> nodes. */
+    function removeHighlight(id) {
         highlights = highlights.filter(function (h) { return h.id !== id; });
-        if (markEl && markEl.parentNode) {
+        getHighlightMarks(id).forEach(function (markEl) {
+            if (!markEl.parentNode) return;
             var parent = markEl.parentNode;
             while (markEl.firstChild) { parent.insertBefore(markEl.firstChild, markEl); }
             parent.removeChild(markEl);
             parent.normalize();
-        }
+        });
         saveHighlights();
     }
 
@@ -921,7 +998,7 @@ Features:
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            removeHighlight(h.id, markEl);
+            removeHighlight(h.id);
             notePopup.style.display = 'none';
         });
         footer.insertBefore(delBtn, footer.querySelector('.tw-hl-btn-ghost'));
@@ -931,12 +1008,8 @@ Features:
             e.stopPropagation();
             h.color = getSelectedColor();
             h.note  = notePopup.querySelector('textarea').value.trim();
-            markEl.style.backgroundColor = h.color;
-            markEl.setAttribute('data-category', getColorName(h.color));
-            if (h.note) {
-                markEl.setAttribute('data-note', h.note);
-            } else {
-                markEl.removeAttribute('data-note');
+            updateHighlightMarks(h);
+            if (!h.note) {
                 hideNoteTooltip();
             }
             saveHighlights();

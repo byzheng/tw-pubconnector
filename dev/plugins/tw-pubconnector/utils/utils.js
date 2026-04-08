@@ -22,6 +22,35 @@ function querySelectorAllIncludingRoot(root, selector) {
     return matches;
 }
 
+function removeElementsIncludingRoot(root, selector) {
+    querySelectorAllIncludingRoot(root, selector).forEach(el => {
+        el.remove();
+    });
+}
+
+function removeSingleFileMetadataComments(document) {
+    const root = document.documentElement || document;
+    const NodeFilterRef = document.defaultView && document.defaultView.NodeFilter
+        ? document.defaultView.NodeFilter
+        : { SHOW_COMMENT: 128 };
+    const walker = document.createTreeWalker(root, NodeFilterRef.SHOW_COMMENT);
+    const commentsToRemove = [];
+    let currentNode = walker.nextNode();
+
+    while (currentNode) {
+        if (/Page saved with SingleFile|saved date:/i.test(currentNode.nodeValue || '')) {
+            commentsToRemove.push(currentNode);
+        }
+        currentNode = walker.nextNode();
+    }
+
+    commentsToRemove.forEach(comment => {
+        if (comment.parentNode) {
+            comment.parentNode.removeChild(comment);
+        }
+    });
+}
+
 function getArticleSiteClass(siteKey) {
     return 'tw-pubconnector-article-site-' + String(siteKey || 'unknown')
         .toLowerCase()
@@ -75,6 +104,12 @@ function getArticle(document, siteConfig) {
         console.log("No valid URL found in the HTML content");
         return document;
     }
+
+    removeSingleFileMetadataComments(document);
+    ["single-file-infobar", ".single-file-infobar", "#single-file-infobar", "form.infobar"].forEach(selector => {
+        removeElementsIncludingRoot(document.documentElement || document, selector);
+    });
+
     //console.log("Found URL:", url);
     // Remove existing script tags
     const scripts = document.querySelectorAll('script');
@@ -142,11 +177,12 @@ function getArticle(document, siteConfig) {
     mergedRemoveSelectors.push(".tw-icon");
     mergedRemoveSelectors.push(".tw-icon-tiny");
     mergedRemoveSelectors.push(".tw-tag");
+    mergedRemoveSelectors.push("single-file-infobar");
 
     if (mergedRemoveSelectors.length) {
         mergedRemoveSelectors.forEach(selector => {
             clones.forEach(clone => {
-                clone.querySelectorAll(selector).forEach(el => el.remove());
+                removeElementsIncludingRoot(clone, selector);
             });
         });
     }

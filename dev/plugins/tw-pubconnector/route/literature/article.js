@@ -187,6 +187,26 @@ Get literature article for a tiddler
 				"window.__TW_PUBCONNECTOR_DOMAIN_LINK_OPTIONS = " + JSON.stringify({ firstOccurrencePerScope: paragraphFirstOnly }) + ";";
 			document.body.appendChild(bootstrapScript);
 
+			const singleFileCleanupScript = document.createElement('script');
+			singleFileCleanupScript.textContent = [
+				"(function() {",
+				"  const selectors = ['single-file-infobar', '.single-file-infobar', '#single-file-infobar', 'form.infobar'];",
+				"  function removeInfobars() {",
+				"    selectors.forEach(function(selector) {",
+				"      document.querySelectorAll(selector).forEach(function(el) { el.remove(); });",
+				"    });",
+				"  }",
+				"  removeInfobars();",
+				"  if (document.documentElement) {",
+				"    new MutationObserver(function() { removeInfobars(); }).observe(document.documentElement, { childList: true, subtree: true });",
+				"  }",
+				"  if (document.readyState === 'loading') {",
+				"    document.addEventListener('DOMContentLoaded', removeInfobars, { once: true });",
+				"  }",
+				"})();"
+			].join("\n");
+			document.body.appendChild(singleFileCleanupScript);
+
 
 			if (scriptText) {
 				hightlightScript.textContent = scriptText.fields.text || "";

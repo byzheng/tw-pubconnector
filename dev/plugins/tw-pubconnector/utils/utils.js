@@ -28,6 +28,41 @@ function removeElementsIncludingRoot(root, selector) {
     });
 }
 
+function shouldKeepScript(scriptEl) {
+    if (!scriptEl || !scriptEl.getAttribute) {
+        return false;
+    }
+    const type = String(scriptEl.getAttribute("type") || "").toLowerCase();
+    if (!type) {
+        return false;
+    }
+    // Keep non-executable math payload scripts so equation sources survive extraction.
+    if (type.indexOf("math/tex") !== -1 || type.indexOf("math/mml") !== -1) {
+        return true;
+    }
+    return false;
+}
+
+function collectMathJaxSupportNodes(document) {
+    const nodes = [];
+    const pushClone = function (node) {
+        if (node) {
+            nodes.push(node.cloneNode(true));
+        }
+    };
+
+    // MathJax v2 SVG output stores shared glyph paths here.
+    pushClone(document.querySelector('#MathJax_SVG_Hidden'));
+
+    const glyphDefs = document.querySelector('defs#MathJax_SVG_glyphs');
+    if (glyphDefs && glyphDefs.parentNode && glyphDefs.parentNode.nodeName && glyphDefs.parentNode.nodeName.toLowerCase() === 'svg') {
+        pushClone(glyphDefs.parentNode);
+    }
+
+    pushClone(document.querySelector('#MathJax_Message'));
+    return nodes;
+}
+
 function removeSingleFileMetadataComments(document) {
     const root = document.documentElement || document;
     const NodeFilterRef = document.defaultView && document.defaultView.NodeFilter
@@ -111,10 +146,14 @@ function getArticle(document, siteConfig) {
     });
 
     //console.log("Found URL:", url);
-    // Remove existing script tags
+    // Remove executable script tags, but preserve non-executable math payload tags.
     const scripts = document.querySelectorAll('script');
-    //console.log("Removing existing script tags:", scripts.length);
-    scripts.forEach(script => script.remove());
+    //console.log("Filtering script tags:", scripts.length);
+    scripts.forEach(script => {
+        if (!shouldKeepScript(script)) {
+            script.remove();
+        }
+    });
 
     let siteKey = Object.keys(siteConfig).find(site => url.includes(site));
     if (!siteKey) return document;
@@ -133,6 +172,8 @@ function getArticle(document, siteConfig) {
     document.querySelectorAll('style').forEach(el => {
         styleClones.push(el.cloneNode(true));
     });
+
+    const mathJaxSupportClones = collectMathJaxSupportNodes(document);
 
     if (!articleClones.length) {
         return document;
@@ -159,10 +200,12 @@ function getArticle(document, siteConfig) {
         articleWrapper.appendChild(clone);
     });
 
-    const clones = [articleWrapper];
+    const clones = [articleWrapper].concat(mathJaxSupportClones);
 
     querySelectorAllIncludingRoot(articleWrapper, 'script').forEach(script => {
-        script.remove();
+        if (!shouldKeepScript(script)) {
+            script.remove();
+        }
     });
 
     querySelectorAllIncludingRoot(articleWrapper, 'style').forEach(style => {

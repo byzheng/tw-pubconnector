@@ -26,6 +26,7 @@ PubConnector and SingleFile work well together for this capture flow: SingleFile
 * Highlight note review through the `highlight-notes` widget.
 * Font size controls for long reading sessions.
 * Domain auto-linking that turns concept names into links back to the wiki.
+* Math equation fallback rendering (MathJax) for pages where publisher scripts are not available.
 
 !! Domain auto-linking
 
@@ -40,3 +41,13 @@ Open [[$:/plugins/bangyou/tw-pubconnector/settings/article]] to configure:
 * whether only the first occurrence per paragraph should be linked
 
 This is useful for building concept-rich reading views without manually editing article HTML.
+
+!! Math equation fallback
+
+Some saved publisher pages keep equations in TeX form and rely on site scripts to render them. The article reader can inject MathJax as a fallback.
+
+Open [[$:/plugins/bangyou/tw-pubconnector/settings/article]] to configure:
+
+* whether math fallback is enabled
+* whether math assets are injected only when equations are detected
+* which MathJax script URL is used (CDN or self-hosted)

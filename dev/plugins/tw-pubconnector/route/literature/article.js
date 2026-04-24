@@ -34,6 +34,17 @@ Get literature article for a tiddler
 		return tiddler.fields.text;
 	}
 
+	function hasMathMarkers(document) {
+		if (!document || !document.body) {
+			return false;
+		}
+		if (document.querySelector("script[type^='math/tex' i], script[type*='mathjax' i], .MathJax, .katex, mjx-container, math")) {
+			return true;
+		}
+		const sampleText = (document.body.textContent || "").slice(0, 500000);
+		return /\$\$[\s\S]{1,500}\$\$|\\\([\s\S]{1,500}\\\)|\\\[[\s\S]{1,500}\\\]|\\begin\{(equation|align|aligned|gather|multline|cases)\}/.test(sampleText);
+	}
+
 	exports.handler = function (request, response, state) {
 		const match = request.url.match(exports.path);
 		if (!match || match.length < 2) {
@@ -123,6 +134,9 @@ Get literature article for a tiddler
 			const ignoreField = getConfigText("$:/config/tw-pubconnector/article/domain-link/ignore-field", "link-ignore").trim();
 			const akaField = getConfigText("$:/config/tw-pubconnector/article/domain-link/aka-field", "aka").trim();
 			const paragraphFirstOnly = getConfigText("$:/config/tw-pubconnector/article/domain-link/paragraph-first", "enable") === "enable";
+			const mathEnabled = getConfigText("$:/config/tw-pubconnector/article/math/enable", "enable") === "enable";
+			const mathAutoDetect = getConfigText("$:/config/tw-pubconnector/article/math/auto-detect", "disable") === "enable";
+			const mathJaxSrc = getConfigText("$:/config/tw-pubconnector/article/math/mathjax-src", "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js").trim();
 			let domainTitles = [];
 
 			if (domainLinkEnabled && domainFilter) {
@@ -166,11 +180,11 @@ Get literature article for a tiddler
 			cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
 			cspMeta.setAttribute('content',
 				"default-src 'none'; " +
-				"script-src 'unsafe-inline'; " +
-				"style-src 'unsafe-inline'; " +
+				"script-src 'unsafe-inline' 'unsafe-eval' data: blob: https:; " +
+				"style-src 'unsafe-inline' data: https:; " +
 				"img-src data: blob: *; " +
 				"font-src data: *; " +
-				"connect-src 'self' ws: wss:;"
+				"connect-src 'self' ws: wss: https:;"
 			);
 			const head = document.querySelector('head') || document.documentElement;
 			head.insertBefore(cspMeta, head.firstChild);
@@ -216,6 +230,28 @@ Get literature article for a tiddler
 			if (domainLinkEnabled && domainLinkText) {
 				domainLinkScript.textContent = domainLinkText.fields.text || "";
 				document.body.appendChild(domainLinkScript);
+			}
+
+			if (mathEnabled && mathJaxSrc && (!mathAutoDetect || hasMathMarkers(document))) {
+				const mathJaxConfigScript = document.createElement("script");
+				mathJaxConfigScript.textContent = [
+					"window.MathJax = window.MathJax || {};",
+					"window.MathJax.tex = window.MathJax.tex || {};",
+					"window.MathJax.tex.inlineMath = window.MathJax.tex.inlineMath || [['$', '$'], ['\\\\(', '\\\\)']];",
+					"window.MathJax.tex.displayMath = window.MathJax.tex.displayMath || [['$$', '$$'], ['\\\\[', '\\\\]']];",
+					"window.MathJax.tex.processEscapes = true;",
+					"window.MathJax.tex.processEnvironments = true;",
+					"window.MathJax.options = window.MathJax.options || {};",
+					"window.MathJax.options.skipHtmlTags = window.MathJax.options.skipHtmlTags || ['script', 'noscript', 'style', 'textarea', 'pre', 'code'];"
+				].join("\n");
+				document.body.appendChild(mathJaxConfigScript);
+
+				const mathJaxScript = document.createElement("script");
+				mathJaxScript.setAttribute("id", "tw-pubconnector-mathjax");
+				mathJaxScript.setAttribute("src", mathJaxSrc);
+				mathJaxScript.setAttribute("defer", "defer");
+				mathJaxScript.setAttribute("crossorigin", "anonymous");
+				document.body.appendChild(mathJaxScript);
 			}
 
 

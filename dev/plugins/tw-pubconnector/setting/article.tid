@@ -50,3 +50,27 @@ This field is parsed as a TiddlyWiki list and used as alternative link terms.
 </$checkbox>
 
 Repeated matches of the same Domain term in one paragraph can be left plain to reduce noise.
+
+----
+
+!! Math Equation Rendering
+
+When publisher scripts are stripped from saved pages, formulas may stay as raw TeX. This fallback loads MathJax in the article reader.
+
+<$checkbox tiddler="$:/config/tw-pubconnector/article/math/enable" field="text" checked="enable" unchecked="disable" default="enable">
+  <$link to="$:/config/tw-pubconnector/article/math/enable">Enable Math Rendering Fallback</$link>
+</$checkbox>
+
+----
+
+<$checkbox tiddler="$:/config/tw-pubconnector/article/math/auto-detect" field="text" checked="enable" unchecked="disable" default="enable">
+  <$link to="$:/config/tw-pubconnector/article/math/auto-detect">Only inject math script when equations are detected</$link>
+</$checkbox>
+
+----
+
+<$link to="$:/config/tw-pubconnector/article/math/mathjax-src">MathJax script URL</$link>
+
+<$edit-text tiddler="$:/config/tw-pubconnector/article/math/mathjax-src" field="text" default="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" tag="input" />
+
+Use another CDN or a self-hosted URL if your environment blocks jsDelivr.

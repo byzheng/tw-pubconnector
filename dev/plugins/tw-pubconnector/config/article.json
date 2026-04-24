@@ -29,7 +29,13 @@
             ]
         },
         "springer.com": {
-            "articleSelector": "main.js-main-column"
+            "articleSelector": "article#main",
+              "removeSelectors": [
+                "section[aria-labelledby='inline-recommendations']",
+                "section[aria-labelledby='content-related-subjects']",
+                "div[data-test='article-metrics']",
+                "section[aria-labelledby='article-info']"
+            ]
         },
         "pnas.org": {
             "articleSelector": "article[data-type='research-article']",

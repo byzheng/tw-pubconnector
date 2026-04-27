@@ -52,5 +52,10 @@
                 "div#header",
                 "div#footer"
             ]
+        },
+        "oup.com": {
+            "articleSelector": "div.content-inner-wrap",
+            "removeSelectors": [
+            ]
         }
 }

@@ -139,17 +139,12 @@ function getArticle(document, siteConfig) {
         console.log("No valid URL found in the HTML content");
         return document;
     }
+    
 
     removeSingleFileMetadataComments(document);
     ["single-file-infobar", ".single-file-infobar", "#single-file-infobar", "form.infobar"].forEach(selector => {
         removeElementsIncludingRoot(document.documentElement || document, selector);
     });
-
-    // Remove old tw-pubconnector claesses    
-    [".tw-banner-shell", ".tw-banner", ".tw-tag", ".tw-icon-tiny", ".tw-icon"].forEach(selector => {
-        removeElementsIncludingRoot(document.documentElement || document, selector);
-    });
-
 
     //console.log("Found URL:", url);
     // Remove executable script tags, but preserve non-executable math payload tags.
@@ -160,9 +155,11 @@ function getArticle(document, siteConfig) {
             script.remove();
         }
     });
-
     let siteKey = Object.keys(siteConfig).find(site => url.includes(site));
-    if (!siteKey) return document;
+    if (!siteKey) {
+        console.log("No matching site configuration found for URL. Returning original document.");
+        return document;
+    }
     let { articleSelector, removeSelectors, classRemovals } = siteConfig[siteKey];
     if (!Array.isArray(articleSelector)) {
         articleSelector = [articleSelector];
@@ -226,8 +223,8 @@ function getArticle(document, siteConfig) {
     mergedRemoveSelectors.push(".tw-icon");
     mergedRemoveSelectors.push(".tw-icon-tiny");
     mergedRemoveSelectors.push(".tw-tag");
+    mergedRemoveSelectors.push("#tw-banner");
     mergedRemoveSelectors.push("single-file-infobar");
-
     if (mergedRemoveSelectors.length) {
         mergedRemoveSelectors.forEach(selector => {
             clones.forEach(clone => {

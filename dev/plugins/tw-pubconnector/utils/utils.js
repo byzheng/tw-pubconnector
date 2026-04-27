@@ -145,6 +145,12 @@ function getArticle(document, siteConfig) {
         removeElementsIncludingRoot(document.documentElement || document, selector);
     });
 
+    // Remove old tw-pubconnector claesses    
+    [".tw-banner-shell", ".tw-banner", ".tw-tag", ".tw-icon-tiny", ".tw-icon"].forEach(selector => {
+        removeElementsIncludingRoot(document.documentElement || document, selector);
+    });
+
+
     //console.log("Found URL:", url);
     // Remove executable script tags, but preserve non-executable math payload tags.
     const scripts = document.querySelectorAll('script');

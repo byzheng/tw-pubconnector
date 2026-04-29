@@ -57,5 +57,11 @@
             "articleSelector": "div.content-inner-wrap",
             "removeSelectors": [
             ]
+        },
+        "nature.com": {
+            "articleSelector": "article",
+            "removeSelectors": [
+                "section[aria-labelledby='inline-recommendations']"
+            ]
         }
 }

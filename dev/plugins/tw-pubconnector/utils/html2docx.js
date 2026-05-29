@@ -21,9 +21,13 @@ const htmlToDocx = require('html-to-docx');
  * @param {string} outputPath - The path to save the .docx file.
  */
 async function saveHtmlDocumentAsDocx(htmlDocument, outputPath) {
-    // Save the HTML content for debugging
+    // Clone the document to avoid modifying the original
+    const docClone = htmlDocument.cloneNode(true);
+    // Remove all <img> elements from the clone
+    const imgs = docClone.querySelectorAll('img');
+    imgs.forEach(img => img.remove());
     // Use html-to-docx to convert HTML to DOCX, preserving formatting, images, tables, etc.
-    const htmlString = htmlDocument.documentElement.outerHTML;
+    const htmlString = docClone.documentElement.outerHTML;
     const buffer = await htmlToDocx(htmlString, null, {
         table: { row: { cantSplit: true } },
         footer: true,

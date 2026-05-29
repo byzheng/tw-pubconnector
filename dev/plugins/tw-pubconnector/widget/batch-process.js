@@ -17,6 +17,7 @@ var BatchProcessWidget = function(parseTreeNode,options) {
 BatchProcessWidget.prototype = Object.create(Widget.prototype);
 
 
+
 BatchProcessWidget.prototype.render = function(parent,nextSibling) {
 	this.parentDomNode = parent;
 	this.computeAttributes();
@@ -25,32 +26,82 @@ BatchProcessWidget.prototype.render = function(parent,nextSibling) {
 	// Create container
 	var container = this.document.createElement('div');
 	container.className = 'tw-pubconnector-batch-process';
+	container.style.maxWidth = '540px';
+	container.style.margin = '24px auto';
+	container.style.padding = '24px 20px 20px 20px';
+	container.style.background = '#f9f9fb';
+	container.style.border = '1px solid #e0e0e0';
+	container.style.borderRadius = '12px';
+	container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+
+	// Label for filter
+	var label = this.document.createElement('label');
+	label.textContent = 'Filter tiddlers:';
+	label.style.display = 'block';
+	label.style.fontWeight = 'bold';
+	label.style.marginBottom = '6px';
+	container.appendChild(label);
 
 	// Input for filter
 	var input = this.document.createElement('input');
 	input.type = 'text';
 	input.placeholder = 'Enter filter (e.g. [author:Smith])';
 	input.value = this.filter || '';
+	input.style.width = '100%';
+	input.style.padding = '8px';
+	input.style.marginBottom = '12px';
+	input.style.border = '1px solid #ccc';
+	input.style.borderRadius = '6px';
+	input.style.fontSize = '1em';
 	container.appendChild(input);
 
 	// List area
+	var listLabel = this.document.createElement('div');
+	listLabel.textContent = 'Preview (max 10):';
+	listLabel.style.margin = '8px 0 4px 0';
+	listLabel.style.fontSize = '0.95em';
+	container.appendChild(listLabel);
+
 	var listArea = this.document.createElement('ul');
 	listArea.style.maxHeight = '160px';
 	listArea.style.overflowY = 'auto';
+	listArea.style.background = '#fff';
+	listArea.style.border = '1px solid #e0e0e0';
+	listArea.style.borderRadius = '6px';
+	listArea.style.padding = '8px 12px';
+	listArea.style.marginBottom = '16px';
+	listArea.style.fontSize = '0.97em';
 	container.appendChild(listArea);
 
 	// Button
 	var button = this.document.createElement('button');
 	button.textContent = 'Process';
+	button.style.background = '#1976d2';
+	button.style.color = '#fff';
+	button.style.border = 'none';
+	button.style.padding = '10px 24px';
+	button.style.borderRadius = '6px';
+	button.style.fontWeight = 'bold';
+	button.style.fontSize = '1em';
+	button.style.cursor = 'pointer';
+	button.style.marginBottom = '16px';
+	button.onmouseover = function() { button.style.background = '#1565c0'; };
+	button.onmouseout = function() { button.style.background = '#1976d2'; };
 	container.appendChild(button);
 
 	// Output area
 	var output = this.document.createElement('textarea');
 	output.rows = 10;
-	output.cols = 60;
+	output.style.width = '100%';
+	output.style.boxSizing = 'border-box';
+	output.style.fontFamily = 'monospace';
+	output.style.fontSize = '0.98em';
+	output.style.background = '#f4f4f8';
+	output.style.border = '1px solid #e0e0e0';
+	output.style.borderRadius = '6px';
+	output.style.marginTop = '10px';
+	output.style.padding = '8px';
 	output.readOnly = true;
-	output.style.display = 'block';
-	output.style.marginTop = '8px';
 	container.appendChild(output);
 
 	// Add to DOM
@@ -68,12 +119,14 @@ BatchProcessWidget.prototype.render = function(parent,nextSibling) {
 		if(!tiddlers.length) {
 			const li = this.document.createElement('li');
 			li.textContent = 'No tiddlers found.';
+			li.style.color = '#888';
 			listArea.appendChild(li);
 			return;
 		}
 		tiddlers.forEach(title => {
 			const li = this.document.createElement('li');
 			li.textContent = title;
+			li.style.padding = '2px 0 2px 0';
 			listArea.appendChild(li);
 		});
 	};

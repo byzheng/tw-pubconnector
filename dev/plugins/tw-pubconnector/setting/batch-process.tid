@@ -1,8 +1,8 @@
 caption: Batch Process
 created: {{!!created}}
 modified: {{!!modified}}
-tags: $:/tags/ControlPanel/Settings/tw-pubconnector start doc
-title: plugins/bangyou/tw-pubconnector/settings/batch-process
+tags: $:/tags/ControlPanel/Settings/tw-pubconnector
+title: $:/plugins/bangyou/tw-pubconnector/settings/batch-process
 type: text/vnd.tiddlywiki
 
 Batch process literature tiddlers (e.g., convert HTML to Word in bulk).

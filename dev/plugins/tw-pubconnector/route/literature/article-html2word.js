@@ -48,7 +48,18 @@ exports.handler = async function(request, response, state) {
 			return;
 		}
 		const htmlContent = await fs.readFile(htmlPath, 'utf-8');
-		const dom = new JSDOM(htmlContent);
+		// Suppress jsdom warnings/errors during parsing
+		const originalWarn = console.warn;
+		const originalError = console.error;
+		console.warn = () => {};
+		console.error = () => {};
+		let dom;
+		try {
+			dom = new JSDOM(htmlContent);
+		} finally {
+			console.warn = originalWarn;
+			console.error = originalError;
+		}
 		const html_doc = dom.window.document;
 		const siteConfig = loadSiteConfig($tw);
 		if (!siteConfig) {

@@ -220,13 +220,27 @@ function getArticle(document, siteConfig) {
 
     const siteClass = getArticleSiteClass(siteKey);
 
-    styleClones.forEach(styleClone => {
-        if (document.head) {
-            document.head.appendChild(styleClone);
-        } else {
-            document.documentElement.insertBefore(styleClone, document.body || null);
-        }
-    });
+    // Suppress console warnings/errors during style append
+    const _originalWarn = console.warn;
+    const _originalError = console.error;
+    console.warn = () => {};
+    console.error = () => {};
+    try {
+        styleClones.forEach(styleClone => {
+            try {
+                if (document.head) {
+                    document.head.appendChild(styleClone);
+                } else {
+                    document.documentElement.insertBefore(styleClone, document.body || null);
+                }
+            } catch (e) {
+                // Ignore thrown errors
+            }
+        });
+    } finally {
+        console.warn = _originalWarn;
+        console.error = _originalError;
+    }
 
     document.body.classList.add('tw-pubconnector-article-page', siteClass);
     document.documentElement.classList.add('tw-pubconnector-article-document');

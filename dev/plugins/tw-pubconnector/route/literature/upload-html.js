@@ -115,11 +115,21 @@ module-type: route
 				let html_doc;
 				try {
 					// Parse the HTML content into a DOM using JSDOM
-					const dom = new JSDOM(htmlContent);
+					const originalWarn = console.warn;
+					const originalError = console.error;
+					console.warn = () => {};
+					console.error = () => {};
+					let dom;
+					try {
+						dom = new JSDOM(htmlContent);
+					} finally {
+						console.warn = originalWarn;
+						console.error = originalError;
+					}
 					html_doc = dom.window.document;
 				} catch (e) {
 					// Fail gracefully if HTML parsing fails
-					console.error("Cheerio parsing failed:", e);
+					console.error("JSDOM parsing failed:", e);
 					response.writeHead(400, { "Content-Type": "application/json" });
 					response.end(JSON.stringify({
 						"status": "error",

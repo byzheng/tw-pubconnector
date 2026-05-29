@@ -1,3 +1,39 @@
+/**
+ * Loads and parses the site config tiddler as JSON.
+ * @param {object} $tw - The TiddlyWiki global object.
+ * @param {object} response - (Optional) HTTP response object for error handling.
+ * @returns {object|null} The parsed config object, or null if not found/invalid.
+ */
+function loadSiteConfig($tw, response) {
+    const siteConfigTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/config/article", "");
+    if (!siteConfigTiddler || !siteConfigTiddler.fields || !siteConfigTiddler.fields.text) {
+        if (response) {
+            response.writeHead(500, { "Content-Type": "text/plain" });
+            response.end("Site configuration not found");
+        }
+        return null;
+    }
+    let siteConfig;
+    try {
+        siteConfig = JSON.parse(siteConfigTiddler.fields.text);
+    } catch (e) {
+        if (response) {
+            response.writeHead(500, { "Content-Type": "text/plain" });
+            response.end("Invalid site configuration");
+        }
+        return null;
+    }
+    if (!siteConfig) {
+        if (response) {
+            response.writeHead(500, { "Content-Type": "text/plain" });
+            response.end("Invalid site configuration");
+        }
+        return null;
+    }
+    return siteConfig;
+}
+
+exports.loadSiteConfig = loadSiteConfig;
 /*\
 title: $:/plugins/bangyou/tw-pubconnector/script/highlight.js
 type: application/javascript
@@ -259,4 +295,5 @@ function getArticle(document, siteConfig) {
 
 }
 exports.getArticle = getArticle;
+exports.loadSiteConfig = loadSiteConfig;
 

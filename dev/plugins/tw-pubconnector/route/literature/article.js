@@ -113,20 +113,9 @@ Get literature article for a tiddler
 
 
 
-			const siteConfigTiddler = $tw.wiki.getTiddler("$:/plugins/bangyou/tw-pubconnector/config/article", "");
-
-			if (!siteConfigTiddler || !siteConfigTiddler.fields || !siteConfigTiddler.fields.text) {
-				response.writeHead(500, { "Content-Type": "text/plain" });
-				response.end("Site configuration not found");
-				console.log("Site configuration not found");
-				return;
-			}
-
-			const siteConfig = JSON.parse(siteConfigTiddler.fields.text);
+			const siteConfig = utils.loadSiteConfig($tw, response);
 			if (!siteConfig) {
-				response.writeHead(500, { "Content-Type": "text/plain" });
-				response.end("Invalid site configuration");
-				console.log("Invalid site configuration");
+				console.log("Site configuration not found or invalid");
 				return;
 			}
 			const domainLinkEnabled = getConfigText("$:/config/tw-pubconnector/article/domain-link/enable", "enable") === "enable";

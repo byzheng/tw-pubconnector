@@ -47,7 +47,7 @@ module-type: route
 	const path = require('path');
 	const formidable = require('formidable'); // For parsing multipart form data (file uploads)
 	const { JSDOM } = require("jsdom"); // For DOM parsing of HTML content
-	const { getArticle } = require("../../utils/utils.js");
+	const { getArticle, loadSiteConfig } = require("../../utils/utils.js");
 	const { saveHtmlDocumentAsDocx } = require("../../utils/html2docx.js");
 
 	// if ($tw.node) {
@@ -213,7 +213,12 @@ module-type: route
 					console.log(`File saved successfully at ${fullPathLiteratureHtml}`);
 
 					// Extract article content and save as Word file
-					const articleDoc = getArticle(html_doc, $tw.pubconnector_siteConfig || {});
+					const siteConfig = loadSiteConfig($tw, response);
+					if (!siteConfig) {
+						console.log("Site configuration not found or invalid");
+						return;
+					}
+					const articleDoc = getArticle(html_doc, siteConfig);
 					await saveHtmlDocumentAsDocx(articleDoc, fullPathLiteratureWord);
 					console.log(`Word file saved successfully at ${fullPathLiteratureWord}`);
 				} catch (err) {

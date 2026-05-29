@@ -47,6 +47,8 @@ module-type: route
 	const path = require('path');
 	const formidable = require('formidable'); // For parsing multipart form data (file uploads)
 	const { JSDOM } = require("jsdom"); // For DOM parsing of HTML content
+	const { getArticle } = require("../../utils/utils.js");
+	const { saveHtmlDocumentAsDocx } = require("../../utils/html2docx.js");
 
 	// if ($tw.node) {
 	//     var crossref = require("$:/plugins/bangyou/tw-pubconnector/utils/crossref.js");
@@ -199,23 +201,30 @@ module-type: route
 
 				// Compose full path for HTML file using tiddler title
 				const fullPathLiteratureHtml = path.join(fullPathLIterature, "html", tiddlerTitle + ".html");
-
-				// Create directory for the HTML file if not existing
 				$tw.utils.createDirectory(path.dirname(fullPathLiteratureHtml));
+
+				// Compose full path for Word file using tiddler title
+				const fullPathLiteratureWord = path.join(fullPathLIterature, "word", tiddlerTitle + ".docx");
+				$tw.utils.createDirectory(path.dirname(fullPathLiteratureWord));
 
 				try {
 					// Write the uploaded HTML content to the file
 					await fs.writeFile(fullPathLiteratureHtml, htmlContent, 'utf8');
 					console.log(`File saved successfully at ${fullPathLiteratureHtml}`);
+
+					// Extract article content and save as Word file
+					const articleDoc = getArticle(html_doc, $tw.pubconnector_siteConfig || {});
+					await saveHtmlDocumentAsDocx(articleDoc, fullPathLiteratureWord);
+					console.log(`Word file saved successfully at ${fullPathLiteratureWord}`);
 				} catch (err) {
 					// Handle any error during file write
 					response.writeHead(400, { "Content-Type": "application/json" });
 					response.end(JSON.stringify({
 						"status": "error",
-						"message": "Failed to save HTML content to file",
+						"message": "Failed to save HTML or Word content to file",
 						"code": 400
 					}));
-					console.error(`Error saving file at ${htmlContent}:`, err);
+					console.error(`Error saving file at ${fullPathLiteratureHtml} or ${fullPathLiteratureWord}:`, err);
 				}
 				// // Update references and citations for tiddlers
 				// console.log("Updating references and citations for tiddler:", tiddlerTitle);

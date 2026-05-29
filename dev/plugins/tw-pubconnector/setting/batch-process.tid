@@ -1,0 +1,14 @@
+caption: Batch Process
+created: {{!!created}}
+modified: {{!!modified}}
+tags: $:/tags/ControlPanel/Settings/tw-pubconnector start doc
+title: plugins/bangyou/tw-pubconnector/settings/batch-process
+type: text/vnd.tiddlywiki
+
+Batch process literature tiddlers (e.g., convert HTML to Word in bulk).
+
+Enter a filter to select tiddlers (e.g., [tag[bibtex-entry]]), then click Process.
+
+<$batch-process />
+
+<small>Requires the batchProcessTiddler function to be implemented in literature.js.</small>

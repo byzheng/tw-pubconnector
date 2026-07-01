@@ -24,7 +24,9 @@ function normalizeWhitespace(text) {
 }
 
 function escapeMarkdownText(text) {
-    return text.replace(/[\\`*_{}\[\]()#+\-.!|>]/g, '\\$&');
+    // Avoid escaping '.' and '-' and parentheses so natural text like
+    // '(Pandey & Senthil-...' or sentence-ending periods remain readable.
+    return text.replace(/[\\`*_{}\[\]#+.!|>]/g, '\\$&');
 }
 
 function escapeMarkdownUrl(url) {
@@ -156,21 +158,13 @@ function serializeNode(node, context) {
     }
 
     if (tagName === 'a') {
-        const text = mergeInlineFragments([serializeChildren(node, context)]) || escapeMarkdownText(node.getAttribute('href') || '');
-        const href = node.getAttribute('href');
-        if (!href) {
-            return text;
-        }
-        return `[${text}](${escapeMarkdownUrl(href)})`;
+        // Keep the anchor's visible text but drop the href so the result is plain text
+        return mergeInlineFragments([serializeChildren(node, context)]);
     }
 
     if (tagName === 'img') {
-        const alt = escapeMarkdownText(node.getAttribute('alt') || '');
-        const src = node.getAttribute('src');
-        if (!src) {
-            return alt;
-        }
-        return `![${alt}](${escapeMarkdownUrl(src)})`;
+        // Remove images entirely
+        return '';
     }
 
     if (/^h[1-6]$/.test(tagName)) {
@@ -215,7 +209,64 @@ function convertHtmlDocumentToMarkdown(htmlDocument) {
     const docClone = htmlDocument.cloneNode(true);
     const root = docClone.querySelector('article') || docClone.body || docClone.documentElement;
     const markdown = serializeChildren(root, { indent: 0, preserveWhitespace: false });
-    return ensureBlockSpacing(markdown) + '\n';
+    const body = ensureBlockSpacing(markdown) + '\n';
+
+    // Extract title and authors from document head or fallback to in-document elements
+    function getMetaContent(doc, selectors) {
+        for (const sel of selectors) {
+            const el = doc.querySelector(sel);
+            if (el) {
+                const attr = el.getAttribute('content') || el.textContent || el.getAttribute('href') || '';
+                if (attr && String(attr).trim()) return String(attr).trim();
+            }
+        }
+        return null;
+    }
+
+    const titleSelectors = [
+        "meta[name='citation_title' i]",
+        "meta[property='og:title' i]",
+        "meta[name='dc.title' i]",
+        'title'
+    ];
+    let title = getMetaContent(docClone, titleSelectors);
+    if (!title) {
+        const h1 = root.querySelector('h1');
+        if (h1) title = mergeInlineFragments([serializeChildren(h1, { indent: 0 })]).trim();
+    }
+
+    // Authors: allow multiple citation_author meta tags
+    const authors = [];
+    docClone.querySelectorAll("meta[name='citation_author' i]").forEach(a => {
+        const v = a.getAttribute('content');
+        if (v) authors.push(String(v).trim());
+    });
+    if (!authors.length) {
+        const authorMeta = getMetaContent(docClone, ["meta[name='author' i]", "meta[name='dc.creator' i]"]);
+        if (authorMeta) authors.push(authorMeta);
+    }
+    if (!authors.length) {
+        // look for typical author elements
+        const auEl = root.querySelector('.author, .byline, [rel=author]');
+        if (auEl) {
+            authors.push(mergeInlineFragments([serializeChildren(auEl, { indent: 0 })]).trim());
+        }
+    }
+
+    let header = '';
+    if (title) {
+        // avoid duplicating if body already begins with same h1/title line
+        const firstLine = body.split('\n', 1)[0] || '';
+        const normalizedFirst = firstLine.replace(/^#\s*/, '').trim();
+        if (normalizedFirst.toLowerCase() !== String(title).trim().toLowerCase()) {
+            header += `# ${String(title).trim()}\n\n`;
+        }
+    }
+    if (authors && authors.length) {
+        header += `${authors.join(', ')}\n\n`;
+    }
+
+    return (header + body).replace(/\n{3,}/g, '\n\n');
 }
 
 
@@ -226,7 +277,10 @@ function convertHtmlDocumentToMarkdown(htmlDocument) {
  */
 async function saveHtmlDocumentAsMD(htmlDocument, outputPath) {
     const markdown = convertHtmlDocumentToMarkdown(htmlDocument);
-    fs.writeFileSync(outputPath, markdown, 'utf8');
+    // Post-process: remove any remaining unnecessary backslash escapes
+    // for dots, hyphens, or parentheses that may have come from input text.
+    const cleaned = markdown.replace(/\\([.\-()])/g, '$1');
+    fs.writeFileSync(outputPath, cleaned, 'utf8');
 }
 
 exports.saveHtmlDocumentAsMD = saveHtmlDocumentAsMD;

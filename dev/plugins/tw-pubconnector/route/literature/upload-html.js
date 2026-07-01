@@ -48,7 +48,7 @@ module-type: route
 	const formidable = require('formidable'); // For parsing multipart form data (file uploads)
 	const { JSDOM } = require("jsdom"); // For DOM parsing of HTML content
 	const { getArticle, loadSiteConfig } = require("../../utils/utils.js");
-	const { saveHtmlDocumentAsDocx } = require("../../utils/html2docx.js");
+	const { saveHtmlDocumentAsMD } = require("../../utils/html2md.js");
 
 	// if ($tw.node) {
 	//     var crossref = require("$:/plugins/bangyou/tw-pubconnector/utils/crossref.js");
@@ -214,32 +214,37 @@ module-type: route
 				$tw.utils.createDirectory(path.dirname(fullPathLiteratureHtml));
 
 				// Compose full path for Word file using tiddler title
-				const fullPathLiteratureWord = path.join(fullPathLIterature, "word", tiddlerTitle + ".docx");
-				$tw.utils.createDirectory(path.dirname(fullPathLiteratureWord));
+				// const fullPathLiteratureWord = path.join(fullPathLIterature, "word", tiddlerTitle + ".docx");
+				// $tw.utils.createDirectory(path.dirname(fullPathLiteratureWord));
+
+				// Compose full path for Markdown file using tiddler title
+				const fullPathLiteratureMarkdown = path.join(fullPathLIterature, "markdown", tiddlerTitle + ".md");
+				$tw.utils.createDirectory(path.dirname(fullPathLiteratureMarkdown));
 
 				try {
 					// Write the uploaded HTML content to the file
 					await fs.writeFile(fullPathLiteratureHtml, htmlContent, 'utf8');
 					console.log(`File saved successfully at ${fullPathLiteratureHtml}`);
 
-					// Extract article content and save as Word file
+					// Extract article content and save as Markdown file
 					const siteConfig = loadSiteConfig($tw, response);
 					if (!siteConfig) {
 						console.log("Site configuration not found or invalid");
 						return;
 					}
 					const articleDoc = getArticle(html_doc, siteConfig);
-					await saveHtmlDocumentAsDocx(articleDoc, fullPathLiteratureWord);
-					console.log(`Word file saved successfully at ${fullPathLiteratureWord}`);
+					// await saveHtmlDocumentAsDocx(articleDoc, fullPathLiteratureWord);
+					await saveHtmlDocumentAsMD(articleDoc, fullPathLiteratureMarkdown);
+					console.log(`Markdown file saved successfully at ${fullPathLiteratureMarkdown}`);
 				} catch (err) {
 					// Handle any error during file write
 					response.writeHead(400, { "Content-Type": "application/json" });
 					response.end(JSON.stringify({
 						"status": "error",
-						"message": "Failed to save HTML or Word content to file",
+						"message": "Failed to save HTML or Markdown content to file",
 						"code": 400
 					}));
-					console.error(`Error saving file at ${fullPathLiteratureHtml} or ${fullPathLiteratureWord}:`, err);
+					console.error(`Error saving file at ${fullPathLiteratureHtml} or ${fullPathLiteratureMarkdown}:`, err);
 				}
 				// // Update references and citations for tiddlers
 				// console.log("Updating references and citations for tiddler:", tiddlerTitle);

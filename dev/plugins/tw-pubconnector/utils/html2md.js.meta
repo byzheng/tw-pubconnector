@@ -4,5 +4,5 @@ modified: 20250606061432248
 modifier: Bangyou Zheng
 module-type: library
 tags: 
-title: $:/plugins/bangyou/tw-pubconnector/utils/html2docx.js
+title: $:/plugins/bangyou/tw-pubconnector/utils/html2md.js
 type: application/javascript

@@ -1,6 +1,6 @@
 
 /*\
-title: $:/plugins/bangyou/tw-pubconnector/utils/html2docx.js
+title: $:/plugins/bangyou/tw-pubconnector/utils/html2md.js
 type: application/javascript
 module-type: library
 Utils functions
@@ -11,7 +11,6 @@ Utils functions
 'use strict';
 
 const fs = require('fs');
-const htmlToDocx = require('html-to-docx');
 
 const BLOCK_TAGS = new Set([
     'address', 'article', 'aside', 'blockquote', 'div', 'dl', 'fieldset', 'figcaption',
@@ -25,9 +24,7 @@ function normalizeWhitespace(text) {
 }
 
 function escapeMarkdownText(text) {
-    // Avoid escaping '.' and '-' so common text like 'multi-stress' or
-    // sentence-ending periods remain natural in the converted markdown.
-    return text.replace(/[\\`*_{}\[\]()#+.!|>]/g, '\\$&');
+    return text.replace(/[\\`*_{}\[\]()#+\-.!|>]/g, '\\$&');
 }
 
 function escapeMarkdownUrl(url) {
@@ -221,26 +218,6 @@ function convertHtmlDocumentToMarkdown(htmlDocument) {
     return ensureBlockSpacing(markdown) + '\n';
 }
 
-/**
- * Converts an HTML document object to a Word (.docx) file and saves it.
- * @param {Document} htmlDocument - The HTML document object (e.g., from JSDOM or browser DOM).
- * @param {string} outputPath - The path to save the .docx file.
- */
-async function saveHtmlDocumentAsDocx(htmlDocument, outputPath) {
-    // Clone the document to avoid modifying the original
-    const docClone = htmlDocument.cloneNode(true);
-    // Remove all <img> elements from the clone
-    const imgs = docClone.querySelectorAll('img');
-    imgs.forEach(img => img.remove());
-    // Use html-to-docx to convert HTML to DOCX, preserving formatting, images, tables, etc.
-    const htmlString = docClone.documentElement.outerHTML;
-    const buffer = await htmlToDocx(htmlString, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: false
-    });
-    fs.writeFileSync(outputPath, buffer);
-}
 
 /**
  * Converts an HTML document object to a Markdown (.md) file and saves it.
@@ -249,11 +226,7 @@ async function saveHtmlDocumentAsDocx(htmlDocument, outputPath) {
  */
 async function saveHtmlDocumentAsMD(htmlDocument, outputPath) {
     const markdown = convertHtmlDocumentToMarkdown(htmlDocument);
-    // Post-process: remove any remaining unnecessary backslash escapes
-    // for dots and hyphens (and keep other intentional escapes intact).
-    const cleaned = markdown.replace(/\\([.\-])/g, '$1');
-    fs.writeFileSync(outputPath, cleaned, 'utf8');
+    fs.writeFileSync(outputPath, markdown, 'utf8');
 }
 
-exports.saveHtmlDocumentAsDocx = saveHtmlDocumentAsDocx;
 exports.saveHtmlDocumentAsMD = saveHtmlDocumentAsMD;

@@ -4,5 +4,5 @@ modified: 20250527061439531
 modifier: Bangyou Zheng
 module-type: route
 tags: 
-title: $:/plugins/bangyou/tw-pubconnector/route/literature/article-html2word.js
+title: $:/plugins/bangyou/tw-pubconnector/route/literature/article-html2md.js
 type: application/javascript

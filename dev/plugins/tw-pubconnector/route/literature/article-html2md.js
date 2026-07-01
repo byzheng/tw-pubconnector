@@ -1,5 +1,5 @@
 /*\
-title: $:/plugins/bangyou/tw-pubconnector/route/literature/article-html2word.js
+title: $:/plugins/bangyou/tw-pubconnector/route/literature/article-html2md.js
 type: application/javascript
 module-type: route
 \*/
@@ -10,12 +10,12 @@ module-type: route
 const fs = require('fs').promises;
 const path = require('path');
 const { getArticle, loadSiteConfig } = require("../../utils/utils.js");
-const { saveHtmlDocumentAsDocx } = require("../../utils/html2docx.js");
+const { saveHtmlDocumentAsDocx, saveHtmlDocumentAsMD } = require("../../utils/html2md.js");
 const { JSDOM } = require("jsdom");
 
 exports.method = "PUT";
 exports.platforms = ["node"];
-exports.path = /^\/literature\/article\/(.+)\/html2word$/;
+exports.path = /^\/literature\/article\/(.+)\/html2md$/;
 
 exports.handler = async function(request, response, state) {
 	try {
@@ -26,9 +26,9 @@ exports.handler = async function(request, response, state) {
 			return;
 		}
 		const tiddlerTitle = decodeURIComponent(match[1]);
-        console.log(`Received request to convert ${tiddlerTitle} from HTML to Word`);
+        console.log(`Received request to convert ${tiddlerTitle} from HTML to Markdown`);
 		const tiddler = $tw.wiki.getTiddler(tiddlerTitle);
-        console.log(`Received request to convert ${tiddlerTitle} from HTML to Word`);
+        console.log(`Received request to convert ${tiddlerTitle} from HTML to Markdown`);
 		if (!tiddler) {
 			console.log(`Tiddler ${tiddlerTitle} not found`);
 			response.writeHead(404, { "Content-Type": "application/json" });
@@ -39,7 +39,8 @@ exports.handler = async function(request, response, state) {
 		var pathLiterature = ($tw.wiki.getTiddler("$:/config/tw-pubconnector/path/literature/html") || {}).fields?.text || "literature";
 		var fullPathLiterature = path.resolve($tw.boot.wikiTiddlersPath, "../files", pathLiterature);
 		const htmlPath = path.join(fullPathLiterature, "html", tiddlerTitle + ".html");
-		const wordPath = path.join(fullPathLiterature, "word", tiddlerTitle + ".docx");
+		// const wordPath = path.join(fullPathLiterature, "word", tiddlerTitle + ".docx");
+		const markdownPath = path.join(fullPathLiterature, "markdown", tiddlerTitle + ".md");
 		try {
 			await fs.access(htmlPath);
 		} catch {
@@ -68,9 +69,11 @@ exports.handler = async function(request, response, state) {
 			return;
 		}
 		const articleDoc = getArticle(html_doc, siteConfig);
-		await saveHtmlDocumentAsDocx(articleDoc, wordPath);
+		// await saveHtmlDocumentAsDocx(articleDoc, wordPath);
+		await fs.mkdir(path.dirname(markdownPath), { recursive: true });
+		await saveHtmlDocumentAsMD(articleDoc, markdownPath);
 		response.writeHead(200, { "Content-Type": "application/json" });
-		response.end(JSON.stringify({ status: "success", message: "Converted to Word", code: 200 }));
+		response.end(JSON.stringify({ status: "success", message: "Converted to Markdown", code: 200 }));
 	} catch (err) {
 		response.writeHead(500, { "Content-Type": "application/json" });
 		response.end(JSON.stringify({ status: "error", message: err.toString(), code: 500 }));

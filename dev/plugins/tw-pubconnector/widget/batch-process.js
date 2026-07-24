@@ -141,7 +141,7 @@ BatchProcessWidget.prototype.render = function(parent,nextSibling) {
 			filter += ' +[tag[bibtex-entry]]';
 		}
 		output.value = 'Processing...\n';
-		const tiddlers = this.wiki.filterTiddlers(filter).slice(0,10);
+		const tiddlers = this.wiki.filterTiddlers(filter);
 		if(!tiddlers.length) {
 			output.value += 'No tiddlers found.\n';
 			return;
@@ -154,7 +154,7 @@ BatchProcessWidget.prototype.render = function(parent,nextSibling) {
 				return;
 			}
 			const title = tiddlers[processed];
-			const url = `/literature/article/${encodeURIComponent(title)}/html2word`;
+			const url = `/literature/article/${encodeURIComponent(title)}/html2md`;
 			fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' } })
 				.then(res => res.json())
 				.then(data => {

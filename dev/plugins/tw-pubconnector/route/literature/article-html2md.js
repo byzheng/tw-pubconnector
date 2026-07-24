@@ -41,6 +41,17 @@ exports.handler = async function(request, response, state) {
 		const htmlPath = path.join(fullPathLiterature, "html", tiddlerTitle + ".html");
 		// const wordPath = path.join(fullPathLiterature, "word", tiddlerTitle + ".docx");
 		const markdownPath = path.join(fullPathLiterature, "markdown", tiddlerTitle + ".md");
+
+		// Skip if markdown file already exists
+		try {
+			await fs.access(markdownPath);
+			response.writeHead(200, { "Content-Type": "application/json" });
+			response.end(JSON.stringify({ status: "success", message: "Markdown file already exists", code: 200 }));
+			return;
+		} catch {
+			// File doesn't exist, continue processing
+		}
+		
 		try {
 			await fs.access(htmlPath);
 		} catch {

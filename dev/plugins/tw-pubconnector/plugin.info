@@ -3,7 +3,7 @@
     "name": "tw-pubconnector",
     "description": "Research and literature workflow plugin for TiddlyWiki with author sync, article reading, and citation tracking",
     "author": "Bangyou Zheng",
-    "version": "0.5.43",
+    "version": "0.5.44",
     "core-version": ">5.1.23",
     "source": "https://tw-pubconnector.bangyou.me",
     "list": "readme documentation settings license",

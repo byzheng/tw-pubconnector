@@ -6,3 +6,4 @@ dev/tiddlers/$__config*
 /dev/files
 dev/tiddlers/$__StoryList*.tid
 /dev/tiddlers/*_*_[0-9][0-9][0-9][0-9]*
+dev/tiddlers/$__plugins_bangyou_tw-pubconnector_stuck.tid

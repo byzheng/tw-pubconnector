@@ -784,11 +784,11 @@ function Literature() {
                     const leftInfo = document.createElement('div');
                     leftInfo.className = 'tw-pubconnector-footer-left';
                     
-                    if (data['reference-count']) {
-                        const refsSpan = document.createElement('span');
-                        refsSpan.textContent = `📚 ${data['reference-count']} references`;
-                        leftInfo.appendChild(refsSpan);
-                    }
+                    // if (data['reference-count']) {
+                    //     const refsSpan = document.createElement('span');
+                    //     refsSpan.textContent = `📚 ${data['reference-count']} references`;
+                    //     leftInfo.appendChild(refsSpan);
+                    // }
                     
                     if (data['is-referenced-by-count']) {
                         const citedSpan = document.createElement('span');

@@ -79,6 +79,165 @@ function Literature() {
         return readButton;
     }
 
+    // Create a small, less-visible "stick/pin" button that persists the DOI
+    function createStickButton(cleanDoi, currentRefItem) {
+        const stickButton = document.createElement('button');
+        stickButton.className = 'tw-pubconnector-stick-button';
+        stickButton.innerHTML = '📌';
+        stickButton.title = 'Stick this item';
+
+        // make it small and less visible, positioned bottom-right
+        stickButton.style.position = 'absolute';
+        stickButton.style.bottom = '8px';
+        stickButton.style.right = '8px';
+        stickButton.style.opacity = '0.65';
+        stickButton.style.fontSize = '0.9em';
+        stickButton.style.padding = '4px 6px';
+        stickButton.style.border = '1px solid transparent';
+        stickButton.style.background = 'transparent';
+        stickButton.style.cursor = 'pointer';
+
+        stickButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // if already processing, ignore
+            if (stickButton.classList.contains('sticking')) return;
+
+            // If currently stuck, perform unstick
+            if (stickButton.classList.contains('stuck')) {
+                stickButton.classList.add('sticking');
+                stickButton.title = 'Unsticking...';
+                try {
+                    // try server unstick first
+                    let ok = false;
+                    try {
+                        const res = await fetch('/literature/unstick', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ doi: cleanDoi })
+                        });
+                        ok = res.ok;
+                    } catch (e) {
+                        // fallback to DELETE if POST not supported
+                        try {
+                            const res2 = await fetch(`/literature/stick?doi=${encodeURIComponent(cleanDoi)}`, { method: 'DELETE' });
+                            ok = res2.ok;
+                        } catch (e2) { ok = false; }
+                    }
+
+                    // remove from local tiddler if present and treat as success if server not available
+                    let localRemoved = false;
+                    if (typeof $tw !== 'undefined' && $tw.wiki) {
+                        try {
+                            const tiddlerTitle = '$:/plugins/bangyou/tw-pubconnector/stuck';
+                            const existingText = $tw.wiki.getTiddlerText(tiddlerTitle) || '[]';
+                            let list = [];
+                            try { list = JSON.parse(existingText); } catch (e) { list = []; }
+                            if (Array.isArray(list) && list.includes(cleanDoi)) {
+                                list = list.filter(d => d !== cleanDoi);
+                                $tw.wiki.addTiddler(new $tw.Tiddler({ title: tiddlerTitle, text: JSON.stringify(list, null, 2) }));
+                                localRemoved = true;
+                            }
+                        } catch (e) { localRemoved = false; }
+                    }
+
+                    if (ok || localRemoved) {
+                        // restore read button
+                        const existingRead = currentRefItem.querySelector('.tw-pubconnector-read-button');
+                        if (!existingRead) {
+                            const newRead = createReadButton(cleanDoi, currentRefItem, null);
+                            currentRefItem.insertBefore(newRead, stickButton);
+                        }
+                        stickButton.classList.remove('stuck');
+                        stickButton.classList.remove('sticking');
+                        stickButton.innerHTML = '📌';
+                        stickButton.title = 'Stick this item';
+                        stickButton.style.opacity = '0.65';
+                        stickButton.style.background = 'transparent';
+                        stickButton.style.borderColor = 'transparent';
+                        return;
+                    } else {
+                        throw new Error('Failed to unstick');
+                    }
+                } catch (err) {
+                    console.error('Error unsticking item:', err);
+                    stickButton.classList.remove('sticking');
+                    stickButton.title = 'Unstick (click to retry)';
+                    return;
+                }
+            }
+
+            // Otherwise, perform stick
+            stickButton.classList.add('sticking');
+            stickButton.title = 'Sticking...';
+
+            try {
+                const response = await fetch('/literature/stick', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doi: cleanDoi })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to stick item');
+                }
+
+                // remove the read button if present
+                const existingRead = currentRefItem.querySelector('.tw-pubconnector-read-button');
+                if (existingRead) {
+                    existingRead.remove();
+                }
+
+                stickButton.innerHTML = '📍';
+                stickButton.title = 'Stuck';
+                stickButton.style.opacity = '1';
+                stickButton.style.background = '#fff7ed';
+                stickButton.style.borderColor = '#f59e0b';
+                stickButton.classList.add('stuck');
+                stickButton.classList.remove('sticking');
+            } catch (err) {
+                console.error('Error sticking item:', err);
+
+                // Fallback: persist to a system tiddler if running inside TiddlyWiki
+                if (typeof $tw !== 'undefined' && $tw.wiki) {
+                    try {
+                        const tiddlerTitle = '$:/plugins/bangyou/tw-pubconnector/stuck';
+                        const existingText = $tw.wiki.getTiddlerText(tiddlerTitle) || '[]';
+                        let list;
+                        try {
+                            list = JSON.parse(existingText);
+                        } catch (e) {
+                            list = [];
+                        }
+                        if (!Array.isArray(list)) list = [];
+                        if (!list.includes(cleanDoi)) list.push(cleanDoi);
+                        $tw.wiki.addTiddler(new $tw.Tiddler({ title: tiddlerTitle, text: JSON.stringify(list, null, 2) }));
+
+                        const existingRead = currentRefItem.querySelector('.tw-pubconnector-read-button');
+                        if (existingRead) existingRead.remove();
+
+                        stickButton.innerHTML = '📍';
+                        stickButton.title = 'Stuck (local)';
+                        stickButton.style.opacity = '1';
+                        stickButton.style.background = '#fff7ed';
+                        stickButton.style.borderColor = '#f59e0b';
+                        stickButton.classList.add('stuck');
+                        stickButton.classList.remove('sticking');
+                    } catch (e2) {
+                        console.error('Error updating tiddler for stuck item', e2);
+                        stickButton.classList.remove('sticking');
+                        stickButton.title = 'Stick this item (click to retry)';
+                    }
+                } else {
+                    stickButton.classList.remove('sticking');
+                    stickButton.title = 'Stick this item (click to retry)';
+                }
+            }
+        });
+
+        return stickButton;
+    }
+
     function card(items) {
         let result = document.createElement('div');
         result.className = "tw-pubconnector-list";
@@ -364,9 +523,55 @@ function Literature() {
                     // Clear the existing simple structure and rebuild with rich content
                     currentRefItem.innerHTML = '';
                     
-                    // Create read button
+                    // Create read button and stick button
                     const readButton = createReadButton(cleanDoi, currentRefItem, countElement);
+                    // ensure the container is positioned so the stick button can be placed bottom-right
+                    currentRefItem.style.position = currentRefItem.style.position || 'relative';
                     currentRefItem.appendChild(readButton);
+                    const stickButton = createStickButton(cleanDoi, currentRefItem);
+                    currentRefItem.appendChild(stickButton);
+
+                    // helper to apply stuck UI state
+                    function setStuckState() {
+                        const existingRead = currentRefItem.querySelector('.tw-pubconnector-read-button');
+                        if (existingRead) existingRead.remove();
+                        stickButton.innerHTML = '📍';
+                        stickButton.title = 'Stuck';
+                        stickButton.style.opacity = '1';
+                        stickButton.style.background = '#fff7ed';
+                        stickButton.style.borderColor = '#f59e0b';
+                                        stickButton.classList.add('stuck');
+                                        stickButton.classList.remove('sticking');
+                    }
+
+                    // Check local tiddler fallback list first
+                    try {
+                        if (typeof $tw !== 'undefined' && $tw.wiki) {
+                            const tiddlerTitle = '$:/plugins/bangyou/tw-pubconnector/stuck';
+                            const existingText = $tw.wiki.getTiddlerText(tiddlerTitle) || '[]';
+                            let list = [];
+                            try { list = JSON.parse(existingText); } catch (e) { list = []; }
+                            if (Array.isArray(list) && list.includes(cleanDoi)) {
+                                setStuckState();
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+
+                    // Also check server-side if available and update UI when confirmed
+                    try {
+                        fetch(`/literature/stuck?doi=${encodeURIComponent(cleanDoi)}`)
+                        .then(res => res.ok ? res.json() : null)
+                        .then(json => {
+                            if (!json) return;
+                            // accept either { stuck: true } or an array response
+                            if (json.stuck === true || (Array.isArray(json) && json.includes(cleanDoi))) {
+                                setStuckState();
+                            }
+                        })
+                        .catch(() => {});
+                    } catch (e) {}
                     
                     // Create main content container
                     const contentContainer = document.createElement('div');
@@ -620,10 +825,49 @@ function Literature() {
                     // Create fallback card design
                     currentRefItem.innerHTML = '';
                     
-                    // Create read button for fallback case too
+                    // Create read button and stick button for fallback case too
                     const cleanDoi = currentItem.doi.replace('https://doi.org/', '').replace('http://doi.org/', '');
                     const readButton = createReadButton(cleanDoi, currentRefItem, countElement);
+                    currentRefItem.style.position = currentRefItem.style.position || 'relative';
                     currentRefItem.appendChild(readButton);
+                    const stickButtonFallback = createStickButton(cleanDoi, currentRefItem);
+                    currentRefItem.appendChild(stickButtonFallback);
+
+                    function setStuckStateFallback() {
+                        const existingRead = currentRefItem.querySelector('.tw-pubconnector-read-button');
+                        if (existingRead) existingRead.remove();
+                        stickButtonFallback.innerHTML = '📍';
+                        stickButtonFallback.title = 'Stuck';
+                        stickButtonFallback.style.opacity = '1';
+                        stickButtonFallback.style.background = '#fff7ed';
+                        stickButtonFallback.style.borderColor = '#f59e0b';
+                                        stickButtonFallback.classList.add('stuck');
+                                        stickButtonFallback.classList.remove('sticking');
+                    }
+
+                    try {
+                        if (typeof $tw !== 'undefined' && $tw.wiki) {
+                            const tiddlerTitle = '$:/plugins/bangyou/tw-pubconnector/stuck';
+                            const existingText = $tw.wiki.getTiddlerText(tiddlerTitle) || '[]';
+                            let list = [];
+                            try { list = JSON.parse(existingText); } catch (e) { list = []; }
+                            if (Array.isArray(list) && list.includes(cleanDoi)) {
+                                setStuckStateFallback();
+                            }
+                        }
+                    } catch (e) {}
+
+                    try {
+                        fetch(`/literature/stuck?doi=${encodeURIComponent(cleanDoi)}`)
+                        .then(res => res.ok ? res.json() : null)
+                        .then(json => {
+                            if (!json) return;
+                            if (json.stuck === true || (Array.isArray(json) && json.includes(cleanDoi))) {
+                                setStuckStateFallback();
+                            }
+                        })
+                        .catch(() => {});
+                    } catch (e) {}
                     
                     const fallbackContent = document.createElement('div');
                     fallbackContent.className = 'tw-pubconnector-fallback';
